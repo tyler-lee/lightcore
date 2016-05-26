@@ -861,6 +861,27 @@ exports.applyZip = function (in1, idx1, in2, idx2, func) {
   assem.endDocument();
   return assem.toString();
 };
+exports.applyZipDB = function (in1, idx1, in2, idx2, func) {
+  var iter1 = exports.opIterator(in1, idx1);
+  var iter2 = exports.opIterator(in2, idx2);
+  var assem = exports.smartOpAssembler();
+  var op1 = exports.newOp();
+  var op2 = exports.newOp();
+  var opOut = exports.newOp();
+  var deletedOpList=[];
+  while (op1.opcode || iter1.hasNext() || op2.opcode || iter2.hasNext()) {
+    if ((!op1.opcode) && iter1.hasNext()) iter1.next(op1);
+    if ((!op2.opcode) && iter2.hasNext()) iter2.next(op2);
+    func(op1, op2, opOut,assem,deletedOpList);
+    if (opOut.opcode) {
+      //print(opOut.toSource());
+      assem.append(opOut);
+      opOut.opcode = '';
+    }
+  }
+  assem.endDocument();
+  return assem.toString();
+};
 
 /**
  * Unpacks a string encoded Changeset into a proper Changeset object
@@ -1130,6 +1151,264 @@ exports._slicerZipperFunc = function (attOp, csOp, opOut, pool) {
   }
 };
 
+
+//jwy is testing assem*********
+exports.newAttribOp=function(attribNum,op,beforeused){
+return{newAttriNum:attribNum,Op:op,BeforeUsed:beforeused};
+};
+exports.getAttribIndex=function(attribs,pool){
+//get attrib num
+var newattribs=attribs;
+ var attriblist= newattribs.split('*');
+   if(attriblist){ //attriblist
+     for(var att in attriblist){//for
+        var attribNum=attriblist[att];
+             if(attribNum!=''){//attribNum
+                     var attr = pool.getAttrib(parseInt(attribNum, 36));
+                          if(!attr){
+                                 console.log("bad attributNum of %d,cannot find it in apool",parseInt(attribNum, 36));
+                                 continue;
+                             }else if('Key' == attr[0]){
+                                 //get crypto key 
+                                  return attribNum;
+                                  }
+                            }//attribNum
+                       }//for
+                   }//attriblist
+return -1;
+};
+exports.newKeypos=function(attNum,deleteop,pool){
+var dlen=deleteop.Op.chars-deleteop.Op.lines;
+var attr=pool.getAttrib(parseInt(attNum, 36));
+var keyInfo=attr[1];
+var nonce=keyInfo.substring(0,4);
+var keypos=parseInt(keyInfo.substring(4),16);
+console.log("before changed position is "+keypos);
+keypos=keypos+dlen*2;
+console.log("after changed position is "+keypos);
+return nonce+keypos.toString(16);
+};
+
+exports.addNewAttrib=function(attNum,deleteop,pool){
+var keyInfo=exports.newKeypos(attNum,deleteop,pool);
+var newnum=pool.nextNum;//create a new num
+var attrib=['Key',keyInfo||''];
+pool.numToAttrib[newnum]=attrib;
+pool.attribToNum[attrib]=newnum;
+pool.nextNum=pool.nextNum+1;
+var str=newnum.toString(36);
+return str;
+};
+exports.updateAttribs=function(deletedOp,pool,isadd){
+var attNum=deletedOp.newAttriNum;
+var newattribs=deletedOp.Op.attribs;
+var attriblist= newattribs.split('*');
+if(attriblist){ //attriblist
+  for(var att in attriblist){//for
+      var attribNum=attriblist[att];
+      if(attribNum==attNum){
+         if(isadd){
+         attribNum=exports.addNewAttrib(attNum,deletedOp,pool);
+         attriblist[att]=attribNum;        
+         }
+         else{
+         var intnum=parseInt(attribNum, 36)
+         var attr=pool.getAttrib(intnum);
+         attr[1]=exports.newKeypos(attNum,deletedOp,pool);
+         pool.numToAttrib[intnum]=attr;
+         pool.attribToNum[attr]=intnum;
+         }//end isadd
+        }//end ==
+     }//endfor
+  }//end attriblist
+var str=attriblist.join('*');
+return str;
+};
+//assem,deleteassem
+exports.newDeleteOps=function(attNum,assem,deletedOps,thisOp){
+var attribstr=assem.toString();
+var index=-1;
+var beforeused=0;
+var attribs=thisOp.attribs;
+if(-1==attribs.indexOf('*'+attNum))return null;
+
+var newop=exports.newOp();
+newop.attribs=thisOp.attribs;
+newop.opcode='-';
+
+var tempOp=exports.newOp();
+if(-1!=(index=attribstr.indexOf(thisOp.attribs))){
+attribstr=attribstr.substring(index);
+var biter=exports.opIterator(attribstr,0);
+while(biter.hasNext()){
+biter.next(tempOp);
+if(tempOp.attribs==thisOp.attribs){
+  newop.chars += tempOp.chars;
+  newop.lines += tempOp.lines;
+  beforeused=1;
+     }
+   }//endWhile
+}//endif
+
+newop.chars += thisOp.chars;
+newop.lines += thisOp.lines;
+var newattribop=exports.newAttribOp(attNum,newop,beforeused);
+deletedOps.push(newattribop);
+return newattribop;
+};
+exports.updateDeletedOps=function(attNum,assem,deletedOps,op1){//param: deletedOps is deleted list,op1 is deleted op to update deletedOps
+for(var i=0;i<deletedOps.length;i++){
+  if(deletedOps[i].Op.attribs==op1.attribs){
+      deletedOps[i].Op.chars+=op1.chars;
+      deletedOps[i].Op.lines+=op1.lines;
+      return deletedOps[i];
+   }
+ }
+var re=exports.newDeleteOps(attNum,assem,deletedOps,op1);
+return re;
+};
+exports.applyDeleteOpsInAssem=function(deleteassem,thisOp,pool){
+for(var i=0;i<deleteassem.length;i++){
+    if(thisOp.attribs==deleteassem[i].Op.attribs){
+     var dlen=deleteassem[i].Op.chars-deleteassem[i].Op.lines;
+     console.log("update len is "+dlen);
+     if(dlen<=0)return;
+     if(deleteassem[i].BeforeUsed==1){//used
+       //add attrib, compute new key infor
+       console.log("used");
+       deleteassem[i].newAttriNum=exports.updateAttribs(deleteassem[i],pool,true);
+       deleteassem[i].BeforeUsed=-1;
+       thisOp.attribs=deleteassem[i].newAttriNum;
+       }else if(deleteassem[i].BeforeUsed==0){
+         //compute new keyinfo
+        console.log("unused");
+        deleteassem[i].newAttriNum=exports.updateAttribs(deleteassem[i],pool,false); 
+        deleteassem[i].BeforeUsed=-1;       
+        }else if(deleteassem[i].BeforeUsed==-1){
+         //just update attribindex
+         thisOp.attribs=deleteassem[i].newAttriNum;
+        }
+     }//end if
+   }//endfor
+};
+
+exports.applyDeleteOpsInLast=function(deletedOp,thisOp,pool){
+    if(thisOp.attribs==deletedOp.Op.attribs){
+     if(deletedOp.BeforeUsed==1){//used
+       //add attrib, compute new key infor
+       deletedOp.newAttriNum=exports.updateAttribs(deletedOp,pool,true);
+       thisOp.attribs=deletedOp.newAttriNum;
+       deletedOp.BeforeUsed=-1;
+       }else if(deletedOp.BeforeUsed==0){
+         //compute new keyinfo
+        deletedOp.newAttriNum=exports.updateAttribs(deletedOp,pool,false);       
+        deletedOp.BeforeUsed=-1;     
+        }else if(deletedOp.BeforeUsed==-1){
+         //just update attribindex
+         thisOp.attribs=deletedOp.newAttriNum;
+        }
+     }//end if
+};
+
+exports._slicerZipperFuncDB = function (attOp, csOp, opOut, pool,assem,deletedOpList) {
+  // attOp is the op from the sequence that is being operated on, either an
+  // attribution string or the earlier of two exportss being composed.
+  // pool can be null if definitely not needed.
+  //print(csOp.toSource()+" "+attOp.toSource()+" "+opOut.toSource());
+  if (attOp.opcode == '-') {
+    exports.copyOp(attOp, opOut);
+    attOp.opcode = '';
+  } else if (!attOp.opcode) {
+    exports.copyOp(csOp, opOut);
+    csOp.opcode = '';
+  } else {
+    switch (csOp.opcode) {
+    case '-':
+      {
+        if (csOp.chars <= attOp.chars) {
+          // delete or delete part
+          if (attOp.opcode == '=') {
+            opOut.opcode = '-';
+            opOut.chars = csOp.chars;
+            opOut.lines = csOp.lines;
+            opOut.attribs = '';
+          }
+          attOp.chars -= csOp.chars;
+          attOp.lines -= csOp.lines;
+          var attribKey=exports.getAttribIndex(attOp.attribs,pool);
+          if(-1!=attribKey){
+          csOp.attribs=attOp.attribs;
+          var re=exports.updateDeletedOps(attribKey,assem,deletedOpList,csOp);
+          //if(attOp.chars>attOp.lines)exports.applyDeleteOpsInLast(re,attOp,pool);
+          }//end jwy add
+          csOp.opcode = '';
+          if (!attOp.chars) {
+            attOp.opcode = '';
+          }
+        } else {
+          // delete and keep going
+          if (attOp.opcode == '=') {
+            opOut.opcode = '-';
+            opOut.chars = attOp.chars;
+            opOut.lines = attOp.lines;
+            opOut.attribs = '';
+          }
+          csOp.chars -= attOp.chars;
+          csOp.lines -= attOp.lines;
+
+           //jwy add
+          var attribKey=exports.getAttribIndex(attOp.attribs,pool);
+          if(-1!=attribKey){
+          exports.updateDeletedOps(attribKey,assem,deletedOpList,attOp);
+          }//end jwy added
+          attOp.opcode = '';
+        }
+        break;
+      }
+    case '+':
+      {
+        // insert
+        exports.copyOp(csOp, opOut);
+        csOp.opcode = '';
+        break;
+      }
+    case '=':
+      {
+        if (csOp.chars <= attOp.chars) {
+          // keep or keep part
+          opOut.opcode = attOp.opcode;
+          opOut.chars = csOp.chars;
+          opOut.lines = csOp.lines;
+          opOut.attribs = exports.composeAttributes(attOp.attribs, csOp.attribs, attOp.opcode == '=', pool);
+          csOp.opcode = '';
+          attOp.chars -= csOp.chars;
+          attOp.lines -= csOp.lines;
+          if (!attOp.chars) {
+            attOp.opcode = '';
+          }
+        } else {
+          // keep and keep going
+          opOut.opcode = attOp.opcode;
+          opOut.chars = attOp.chars;
+          opOut.lines = attOp.lines;
+          opOut.attribs = exports.composeAttributes(attOp.attribs, csOp.attribs, attOp.opcode == '=', pool);
+          attOp.opcode = '';
+          csOp.chars -= attOp.chars;
+          csOp.lines -= attOp.lines;
+        }
+        break;
+      }
+    case '':
+      {
+        if(deletedOpList.length>0&&attOp.chars>attOp.lines)exports.applyDeleteOpsInAssem(deletedOpList,attOp,pool);
+        exports.copyOp(attOp, opOut);
+        attOp.opcode = '';
+        break;
+      }
+    }
+  }
+};
+
 /**
  * Applies a Changeset to the attribs string of a AText.
  * @param cs {string} Changeset
@@ -1141,6 +1420,14 @@ exports.applyToAttribution = function (cs, astr, pool) {
 
   return exports.applyZip(astr, 0, unpacked.ops, 0, function (op1, op2, opOut) {
     return exports._slicerZipperFunc(op1, op2, opOut, pool);
+  });
+};
+
+exports.applyToAttributionDB = function (cs, astr, pool) {
+  var unpacked = exports.unpack(cs);
+
+  return exports.applyZipDB(astr, 0, unpacked.ops, 0, function (op1, op2, opOut,assem,deletedOpList) {
+    return exports._slicerZipperFuncDB(op1, op2, opOut, pool,assem,deletedOpList);
   });
 };
 
@@ -1620,6 +1907,13 @@ exports.applyToAText = function (cs, atext, pool) {
   return {
     text: exports.applyToText(cs, atext.text),
     attribs: exports.applyToAttribution(cs, atext.attribs, pool)
+  };
+};
+//applyToATextDB
+exports.applyToATextDB = function (cs, atext, pool) {
+  return {
+    text: exports.applyToText(cs, atext.text),
+    attribs: exports.applyToAttributionDB(cs, atext.attribs, pool)
   };
 };
 
