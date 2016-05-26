@@ -26,11 +26,11 @@ var hooks = require('./pluginfw/hooks');
 //TODO: add by tyler lee
 var Changeset=require('./Changeset');
 //TODO: select crypto module
-var etherpadCrypto=require('./crypto/EtherPadCrypto.js');
-//var etherpadCrypto=require('./crypto/EtherPadCryptoAES.js');
+var etherpadCrypto=require('./crypto/EtherPadCrypto');
+//var etherpadCrypto=require('./crypto/EtherPadCryptoAES');
 var AttributePool = require("./AttributePool");
 //tyler lee add
-//var record=require('./RecordTimeClient.js');
+//var record=require('./RecordTimeClient');
 
 
 function randomString(len)
