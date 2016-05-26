@@ -239,16 +239,16 @@ DocsCrypto.prototype.decryptAtext = function(atext, apool) {
 								continue;
 							}
 							else if('Key' == attr[0]){
-								KeyInfo=attr[1];//get crypto key Infomation
-								keyNum=attribNum;
-								flag++;
-							}
-							else if('author'==attr[0]){
-								authorId=attr[1];
-								flag ++;
-							}
-							if(KeyInfo !='' && authorId != "")
-								break;
+                                                                KeyInfo=attr[1];//get crypto key Infomation
+                                                                keyNum=attribNum;
+                                                                flag++;
+                                                        }
+                                                        else if('author'==attr[0]){
+                                                                authorId=attr[1];
+                                                                flag ++;
+                                                        }
+                                                        if(KeyInfo !='' && authorId != "")
+                                                                        break;
 
 						}//end attribNum
 					}//endfor
