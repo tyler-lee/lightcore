@@ -23,6 +23,29 @@
 var chat = require('./chat').chat;
 var hooks = require('./pluginfw/hooks');
 
+//TODO: add by tyler lee
+var Changeset=require('./Changeset');
+//TODO: select crypto module
+var etherpadCrypto=require('./crypto/EtherPadCrypto.js');
+//var etherpadCrypto=require('./crypto/EtherPadCryptoAES.js');
+var AttributePool = require("./AttributePool");
+//tyler lee add
+//var record=require('./RecordTimeClient.js');
+
+
+function randomString(len)
+  {
+    var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    var randomstring = '';
+    for (var i = 0; i < len; i++)
+    {
+      var rnum = Math.floor(Math.random() * chars.length);
+      randomstring += chars.substring(rnum, rnum + 1);
+    }
+    return randomstring;
+  }
+//add end
+
 // Dependency fill on init. This exists for `pad.socket` only.
 // TODO: bind directly to the socket.
 var pad = undefined;
@@ -40,6 +63,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 
   var rev = serverVars.rev;
   var padId = serverVars.padId;
+  
+  var testoldrev = serverVars.rev;
+  //var startFlag = true;
 
   var state = "IDLE";
   var stateMessage;
@@ -95,6 +121,23 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
   }
 
   editor.setProperty("userAuthor", userId);
+
+  //TODO: key info need to be set first
+  var masterKey="";
+  var masterKey = prompt("Please enter password:","");
+  var ivStr="pG5CM4FxDagm8peJrtZ4"+randomString(4);
+  var keyLength=128;
+  var streamMaxLen = 256;
+  var tempMax = "4";
+   streamMaxLen = streamMaxLen * parseInt(tempMax);
+  var changesetCrypto=new etherpadCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
+
+  //console.log("singleOperationTotalFileSize: "+serverVars.initialAttributedText.text.length/512+"KB");
+  //record.setTimeStamp('singleOperatonNewUserJoinTime', 'start');
+  changesetCrypto.decryptAtext(serverVars.initialAttributedText, serverVars.apool);
+ // record.setTimeStamp('singleOperatonNewUserJoinTime', 'end');
+ // console.log("SingleOperationTotalKeystreamSize:"+changesetCrypto.getTotalKeystreamSize()+"KB");
+
   editor.setBaseAttributedText(serverVars.initialAttributedText, serverVars.apool);
   editor.setUserChangeNotificationCallback(wrapRecordingErrors("handleUserChanges", handleUserChanges));
 
@@ -184,6 +227,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
     var userChangesData = editor.prepareUserChangeset();
     if (userChangesData.changeset)
     {
+	  //record.setTimeStamp('singleOperationEncryptTime', 'start');
+	  userChangesData.changeset=changesetCrypto.encryptCS(userChangesData.changeset,userChangesData.apool);
+	  //record.setTimeStamp('singleOperationEncryptTime', 'end');	//tyler lee: singleOperationTime
       lastCommitTime = t;
       state = "COMMITTING";
       stateMessage = {
@@ -192,6 +238,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         changeset: userChangesData.changeset,
         apool: userChangesData.apool
       };
+	  //record.setTimeStamp("singleOperationFromClientToServerToClientTime", "start");
       sendMessage(stateMessage);
       sentMessage = true;
       callbacks.onInternalAction("commitPerformed");
@@ -271,8 +318,22 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       var changeset = msg.changeset;
       var author = (msg.author || '');
       var apool = msg.apool;
+      var testnewRev = msg.newRev;
 
+        // if(startFlag){
+        //        //record.setTimeStamp('jwyConcurrentTime', 'start');
+        //        startFlag = false;
+        //  }
+	// record.setTimeStamp('singleOperationClientDecryptTime', 'start');	//tyler lee: singleOperationTime
+       changeset=changesetCrypto.decryptCS(changeset,apool);
+       msg.changeset = changeset;
+       //TODO @xchan
+      // console.log("4.changeSet decrypted:");
+      // console.log(changeset);
+	 //record.setTimeStamp('singleOperationClientDecryptTime', 'end');	//tyler lee: singleOperationTime
       // When inInternationalComposition, msg pushed msgQueue.
+	 //TODO: 客户端排队时间：从解密完成到应用到本地之间的时间
+	// record.setTimeStamp('singleOperationClientQueueTime', 'start');	//tyler lee: singleOperationTime
       if (msgQueue.length > 0 || editor.getInInternationalComposition()) {
         if (msgQueue.length > 0) var oldRev = msgQueue[msgQueue.length - 1].newRev;
         else oldRev = rev;
@@ -280,6 +341,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         if (newRev != (oldRev + 1))
         {
           window.console.warn("bad message revision on NEW_CHANGES: " + newRev + " not " + (oldRev + 1));
+          //parent.parent.console.warn("bad message revision on NEW_CHANGES: " + newRev + " not " + (oldRev + 1));
           // setChannelState("DISCONNECTED", "badmessage_newchanges");
           return;
         }
@@ -290,20 +352,35 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       if (newRev != (rev + 1))
       {
         window.console.warn("bad message revision on NEW_CHANGES: " + newRev + " not " + (rev + 1));
+        //parent.parent.console.warn("bad message revision on NEW_CHANGES: " + newRev + " not " + (rev + 1));
         // setChannelState("DISCONNECTED", "badmessage_newchanges");
         return;
       }
       rev = newRev;
+		//TODO: 文本生成速度过慢，队列不够长甚至不存在队列问题
+	 //record.setTimeStamp('singleOperationClientQueueTime', 'end');	//tyler lee: singleOperationTime
+	 //record.setTimeStamp('singleOperationClientApplyToBaseTime', 'start');	//tyler lee: singleOperationTime
       editor.applyChangesToBase(changeset, author, apool);
+	 //record.setTimeStamp('singleOperationClientApplyToBaseTime', 'end');	//tyler lee: singleOperationTime
+
+
+        //if((testnewRev-testoldrev) % 20 == 0){
+          //console.log('jwyConcurrentTotalRevisions = ' + (testnewRev-testoldrev));
+          //record.setTimeStamp('jwyConcurrentTime', 'end');
+          //startFlag = true;
+       //}
     }
     else if (msg.type == "ACCEPT_COMMIT")
     {
+		//the changeset sent has been committed and apply to self window
+	// record.setTimeStamp("singleOperationFromClientToServerToClientTime", "end");
       var newRev = msg.newRev;
       if (msgQueue.length > 0)
       {
         if (newRev != (msgQueue[msgQueue.length - 1].newRev + 1))
         {
           window.console.warn("bad message revision on ACCEPT_COMMIT: " + newRev + " not " + (msgQueue[msgQueue.length - 1][0] + 1));
+          //parent.parent.console.warn("bad message revision on ACCEPT_COMMIT: " + newRev + " not " + (msgQueue[msgQueue.length - 1][0] + 1));
           // setChannelState("DISCONNECTED", "badmessage_acceptcommit");
           return;
         }
@@ -314,6 +391,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       if (newRev != (rev + 1))
       {
         window.console.warn("bad message revision on ACCEPT_COMMIT: " + newRev + " not " + (rev + 1));
+        //parent.parent.console.warn("bad message revision on ACCEPT_COMMIT: " + newRev + " not " + (rev + 1));
         // setChannelState("DISCONNECTED", "badmessage_acceptcommit");
         return;
       }
