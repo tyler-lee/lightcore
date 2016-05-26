@@ -108,6 +108,18 @@ function Ace2Inner(){
     alines: [],
     apool: new AttribPool()
   };
+  var autoEdit = {
+    startFlag: 0,
+    endFlag: false,
+    deleteStartFlag: false,
+    autoEditMode: 0,
+    autoEditLength: 256,
+    autoDeletedLen: 32,
+    toBeDeleted: 512,
+    totalDeleted: 0,
+    insertTimes: 50,
+    targetLen: 4096,//the total size of the file 1MB
+ };
 
   // lines, alltext, alines, and DOM are set up in init()
   if (undoModule.enabled)
@@ -160,6 +172,7 @@ function Ace2Inner(){
   // only calling it in error cases or while debugging.
   var dmesg = noop;
   window.dmesg = noop;
+
 
   var scheduler = parent; // hack for opera required
 
