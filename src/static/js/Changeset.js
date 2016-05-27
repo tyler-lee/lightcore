@@ -861,6 +861,8 @@ exports.applyZip = function (in1, idx1, in2, idx2, func) {
   assem.endDocument();
   return assem.toString();
 };
+
+//TODO: noted by tyler lee
 exports.applyZipDB = function (in1, idx1, in2, idx2, func) {
   var iter1 = exports.opIterator(in1, idx1);
   var iter2 = exports.opIterator(in2, idx2);
@@ -882,6 +884,7 @@ exports.applyZipDB = function (in1, idx1, in2, idx2, func) {
   assem.endDocument();
   return assem.toString();
 };
+//end tyler lee
 
 /**
  * Unpacks a string encoded Changeset into a proper Changeset object
@@ -1151,7 +1154,7 @@ exports._slicerZipperFunc = function (attOp, csOp, opOut, pool) {
   }
 };
 
-
+//TODO: noted by tyler lee
 //jwy is testing assem*********
 exports.newAttribOp=function(attribNum,op,beforeused){
 return{newAttriNum:attribNum,Op:op,BeforeUsed:beforeused};
@@ -1408,6 +1411,7 @@ exports._slicerZipperFuncDB = function (attOp, csOp, opOut, pool,assem,deletedOp
     }
   }
 };
+//end tyler lee
 
 /**
  * Applies a Changeset to the attribs string of a AText.
@@ -1423,6 +1427,7 @@ exports.applyToAttribution = function (cs, astr, pool) {
   });
 };
 
+//TODO: noted by tyler lee
 exports.applyToAttributionDB = function (cs, astr, pool) {
   var unpacked = exports.unpack(cs);
 
@@ -1430,6 +1435,7 @@ exports.applyToAttributionDB = function (cs, astr, pool) {
     return exports._slicerZipperFuncDB(op1, op2, opOut, pool,assem,deletedOpList);
   });
 };
+//end tyler lee
 
 /*exports.oneInsertedLineAtATimeOpIterator = function(opsStr, optStartIndex, charBank) {
   var iter = exports.opIterator(opsStr, optStartIndex);
@@ -1909,13 +1915,14 @@ exports.applyToAText = function (cs, atext, pool) {
     attribs: exports.applyToAttribution(cs, atext.attribs, pool)
   };
 };
-//applyToATextDB
+//TODO: noted by tyler lee
 exports.applyToATextDB = function (cs, atext, pool) {
   return {
     text: exports.applyToText(cs, atext.text),
     attribs: exports.applyToAttributionDB(cs, atext.attribs, pool)
   };
 };
+//end tyler lee
 
 /**
  * Clones a AText structure
