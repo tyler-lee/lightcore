@@ -132,11 +132,20 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
    streamMaxLen = streamMaxLen * parseInt(tempMax);
   var changesetCrypto=new etherpadCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
 
+  //TODO:xchan
+  console.log("recved encrypted Server Atext:");
+  console.log(serverVars);
+
+
   //console.log("singleOperationTotalFileSize: "+serverVars.initialAttributedText.text.length/512+"KB");
   //record.setTimeStamp('singleOperatonNewUserJoinTime', 'start');
   changesetCrypto.decryptAtext(serverVars.initialAttributedText, serverVars.apool);
  // record.setTimeStamp('singleOperatonNewUserJoinTime', 'end');
  // console.log("SingleOperationTotalKeystreamSize:"+changesetCrypto.getTotalKeystreamSize()+"KB");
+
+ //TODO:xchan
+  console.log("recved decrypted Server Atext:");
+  console.log(serverVars);
 
   editor.setBaseAttributedText(serverVars.initialAttributedText, serverVars.apool);
   editor.setUserChangeNotificationCallback(wrapRecordingErrors("handleUserChanges", handleUserChanges));
@@ -319,6 +328,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       var author = (msg.author || '');
       var apool = msg.apool;
       var testnewRev = msg.newRev;
+      //xchan
+      console.log("recved encrypted Changeset:");
+      console.log(msg);
 
         // if(startFlag){
         //        //record.setTimeStamp('jwyConcurrentTime', 'start');
@@ -327,9 +339,10 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 	// record.setTimeStamp('singleOperationClientDecryptTime', 'start');	//tyler lee: singleOperationTime
        changeset=changesetCrypto.decryptCS(changeset,apool);
        msg.changeset = changeset;
-       //TODO @xchan
-      // console.log("4.changeSet decrypted:");
-      // console.log(changeset);
+      
+      //TODO:xchan
+      console.log("recved decrypted Server Atext:");
+      console.log(msg);
 	 //record.setTimeStamp('singleOperationClientDecryptTime', 'end');	//tyler lee: singleOperationTime
       // When inInternationalComposition, msg pushed msgQueue.
 	 //TODO: 客户端排队时间：从解密完成到应用到本地之间的时间
