@@ -77,7 +77,11 @@ Pad.prototype.appendRevision = function appendRevision(aChangeset, author) {
   if(!author)
     author = '';
 
-  var newAText = Changeset.applyToAText(aChangeset, this.atext, this.pool);
+  //TODO: add by tyler lee
+  var newAText = Changeset.applyToATextDB(aChangeset, this.atext, this.pool);
+  //var newAText = Changeset.applyToAText(aChangeset, this.atext, this.pool);
+  //end tyler lee
+
   Changeset.copyAText(newAText, this.atext);
 
   var newRev = ++this.head;
