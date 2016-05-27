@@ -1910,10 +1910,15 @@ exports.makeAText = function (text, attribs) {
  * @param pool {AttribPool} Attribute Pool to add to
  */
 exports.applyToAText = function (cs, atext, pool) {
+//TODO: add by tyler lee
+/*
   return {
     text: exports.applyToText(cs, atext.text),
     attribs: exports.applyToAttribution(cs, atext.attribs, pool)
   };
+*/
+  return exports.applyToATextDB(cs, atext, pool);
+//end tyler lee
 };
 //TODO: noted by tyler lee
 exports.applyToATextDB = function (cs, atext, pool) {
