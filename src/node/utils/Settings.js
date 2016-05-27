@@ -113,7 +113,7 @@ exports.toolbar = {
     ["clearauthorship"]
   ],
   right: [
-    ["importexport", "timeslider", "savedrevision"],
+    //["importexport", "timeslider", "savedrevision"],
     ["settings", "embed"],
     ["showusers"]
   ],
