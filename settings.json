@@ -143,6 +143,7 @@
   */
 
   /* The toolbar buttons configuration.
+  */
   "toolbar": {
     "left": [
       ["bold", "italic", "underline", "strikethrough"],
@@ -151,7 +152,7 @@
       ["clearauthorship"]
     ],
     "right": [
-      ["importexport", "timeslider", "savedrevision"],
+      //["importexport", "timeslider", "savedrevision"],
       ["settings", "embed"],
       ["showusers"]
     ],
@@ -159,7 +160,6 @@
       ["timeslider_export", "timeslider_returnToPad"]
     ]
   },
-  */
 
   /* The log level we are using, can be: DEBUG, INFO, WARN, ERROR */
   "loglevel": "INFO",
