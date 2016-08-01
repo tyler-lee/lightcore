@@ -15,8 +15,8 @@
   "favicon": "favicon.ico",
 
   //IP and port which etherpad should bind at
-  "ip": "0.0.0.0",
-  "port" : 9001,
+  "ip": "172.31.31.234",
+  "port" : 80,
 
   /*
   // Node native SSL support
