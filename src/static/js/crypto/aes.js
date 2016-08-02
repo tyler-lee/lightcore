@@ -34,17 +34,47 @@ b.keySize,b.ivSize);l.iv=d.iv;b=a.encrypt.call(this,b,c,d.key,l);b.mixIn(d);retu
 8&255]]^n[l[k&255]]},encryptBlock:function(a,b){this._doCryptBlock(a,b,this._keySchedule,t,r,w,v,l)},decryptBlock:function(a,c){var d=a[c+1];a[c+1]=a[c+3];a[c+3]=d;this._doCryptBlock(a,c,this._invKeySchedule,b,x,q,n,s);d=a[c+1];a[c+1]=a[c+3];a[c+3]=d},_doCryptBlock:function(a,b,c,d,e,j,l,f){for(var m=this._nRounds,g=a[b]^c[0],h=a[b+1]^c[1],k=a[b+2]^c[2],n=a[b+3]^c[3],p=4,r=1;r<m;r++)var q=d[g>>>24]^e[h>>>16&255]^j[k>>>8&255]^l[n&255]^c[p++],s=d[h>>>24]^e[k>>>16&255]^j[n>>>8&255]^l[g&255]^c[p++],t=
 d[k>>>24]^e[n>>>16&255]^j[g>>>8&255]^l[h&255]^c[p++],n=d[n>>>24]^e[g>>>16&255]^j[h>>>8&255]^l[k&255]^c[p++],g=q,h=s,k=t;q=(f[g>>>24]<<24|f[h>>>16&255]<<16|f[k>>>8&255]<<8|f[n&255])^c[p++];s=(f[h>>>24]<<24|f[k>>>16&255]<<16|f[n>>>8&255]<<8|f[g&255])^c[p++];t=(f[k>>>24]<<24|f[n>>>16&255]<<16|f[g>>>8&255]<<8|f[h&255])^c[p++];n=(f[n>>>24]<<24|f[g>>>16&255]<<16|f[h>>>8&255]<<8|f[k&255])^c[p++];a[b]=q;a[b+1]=s;a[b+2]=t;a[b+3]=n},keySize:8});u.AES=p._createHelper(d)})();
 
-
-exports.encrypt=function(plaintext, passphrass){
-	var ciphertexObj = CryptoJS.AES.encrypt(plaintext, passphrass);
+/*
+Input:
+	either strings or instances of CryptoJS.lib.WordArray. For the key, when you pass a string, it's treated as a passphrase to derive an actual key and IV. Or you can pass a WordArray that represents the actual key. If you pass the actual key, you must also pass the actual IV.
+	
+Output: 
+	CryptoJS.lib.CipherParams object. A CipherParams object gives you access to all the parameters used during encryption. When you use a CipherParams object in a string context, it's automatically converted to a string according to a format strategy. The default is an OpenSSL-compatible format.
+*/
+var encrypt=function(plaintext, passphrass) {
+	var ciphertextObj = CryptoJS.AES.encrypt(plaintext, passphrass);
+	//ciphertextObj is CipherParams object.
 	return ciphertextObj;
 }
  
-exports.decrypt=function(ciphertext, passphrass){
+/*
+Input: 
+	either strings or instances of CryptoJS.lib.CipherParams. A CipherParams object represents a collection of parameters such as the IV, a salt, and the raw ciphertext itself. When you pass a string, it's automatically converted to a CipherParams object according to a configurable format strategy.
+	
+Output: CryptoJS.lib.WordArray object
+*/
+var decrypt=function(ciphertext, passphrass) {
 	var plaintextObj = CryptoJS.AES.decrypt(ciphertext, passphrass);
+	//plaintextObj is WordArray object.
 	return plaintextObj;
 }
 
-exports.toHex=function(hash){
-return hash.toString(CryptoJS.enc.Hex);
+var hexToWordArray=function(hexStr) {
+	var wordArr=CryptoJS.enc.Hex.parse(hexStr);
+	return wordArr;
 }
+
+var wordArrayToHex=function(wordArr) {
+	var hex = CryptoJS.enc.Hex.stringify(wordArr);
+	return hex;
+}
+
+var random=function(bytes) {
+	return CryptoJS.lib.WordArray.random(bytes);
+}
+
+exports.encrypt = encrypt;
+exports.decrypt = decrypt;
+exports.hexToWordArray = hexToWordArray;
+exports.wordArrayToHex = wordArrayToHex;
+exports.random = random;
