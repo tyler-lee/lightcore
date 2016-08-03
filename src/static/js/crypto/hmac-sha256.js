@@ -24,3 +24,20 @@ return hash;
 exports.toHex=function(hash){
 return hash.toString(CryptoJS.enc.Hex);
 }
+
+/*
+Progressive Hmac:
+1. call HmacSHA256Create to create HMAC object, i.e. hmac
+2. call hmac.update to pending message
+3. call hmac.finalize to get the hmac result. the result is WordArray object.
+*/
+var HmacSHA256Create = function(passphrass) {
+	return CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256, passphrass);
+}
+
+var HmacSHA256 = function(message, passphrass) {
+	return CryptoJS.HmacSHA256(message, passphrass);
+}
+
+exports.HmacSHA256Create = HmacSHA256Create;
+exports.HmacSHA256 = HmacSHA256;

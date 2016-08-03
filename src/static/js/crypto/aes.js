@@ -56,6 +56,39 @@ Output: CryptoJS.lib.WordArray object
 var decrypt=function(ciphertext, passphrass) {
 	var plaintextObj = CryptoJS.AES.decrypt(ciphertext, passphrass);
 	//plaintextObj is WordArray object.
+	/*
+	it seems that after decrypted, WordArray object will be appended by some word.
+	before encrypted:
+	{ words:
+   [ 999633534,
+     1333181358,
+     -784887339,
+     1780289856,
+     1654292417,
+     416275336,
+     -1720977508,
+     1080943334 ],
+  sigBytes: 32 }
+
+	after decrypted:
+	{ words:
+   [ 999633534,
+     1333181358,
+     -784887339,
+     1780289856,
+     1654292417,
+     416275336,
+     -1720977508,
+     1080943334,
+     269488144,
+     269488144,
+     269488144,
+     269488144 ],
+  sigBytes: 32 }
+  
+  so, we first encode the WordArray to Hex string, then decode again.
+	*/	
+	plaintextObj = hexToWordArray(wordArrayToHex(plaintextObj));
 	return plaintextObj;
 }
 
