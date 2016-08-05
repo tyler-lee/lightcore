@@ -531,6 +531,20 @@ var pad = {
       catch (e)
       {}
     }
+	
+	
+	//TODO: add by tyler
+	if(!window.sessionStorage) {
+		alert("window.sessionStorage feature is required.");
+	}
+	//TODO: get userName from sessionStorage
+	if(!sessionStorage.userName) {
+		sessionStorage.userName = prompt("Please tell me userName","Anonymous");
+	}
+	if(!clientVars.userName) {
+		clientVars.userName = sessionStorage.userName;
+	}
+	//TODO: get useId from sessionStorage
 
     // order of inits is important here:
     pad.myUserInfo = {
@@ -561,6 +575,9 @@ var pad = {
     pad.collabClient.setOnChannelStateChange(pad.handleChannelStateChange);
     pad.collabClient.setOnInternalAction(pad.handleCollabAction);
 
+	//TODO: add by tyler lee: updateUserInfo to server so that all other users will know
+	pad.collabClient.updateUserInfo(pad.myUserInfo);
+	
     // load initial chat-messages
     if(clientVars.chatHead != -1)
     {

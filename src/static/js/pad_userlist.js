@@ -472,6 +472,7 @@ var paduserlist = (function()
 
       $("#otheruserstable tr").remove();
 
+	  /*TODO: comment by tyler lee: forbid user to change his name 
       if (pad.getUserIsGuest())
       {
         $("#myusernameedit").addClass('myusernameedithoverable');
@@ -490,6 +491,7 @@ var paduserlist = (function()
           }, 0);
         });
       }
+	  */
 
       // color picker
       $("#myswatchbox").click(showColorPicker);
