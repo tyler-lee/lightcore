@@ -63,7 +63,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 
   var rev = serverVars.rev;
   var padId = serverVars.padId;
-  
+
   var testoldrev = serverVars.rev;
   //var startFlag = true;
 
@@ -122,7 +122,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 
   editor.setProperty("userAuthor", userId);
 
-  //TODO: key info need to be set first
+  //TODO: key info need to be set first, we should set this in pad.init as part of pad structure.
   var masterKey="";
   var masterKey = prompt("Please enter password:","");
   var ivStr="pG5CM4FxDagm8peJrtZ4"+randomString(4);
@@ -132,20 +132,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
    streamMaxLen = streamMaxLen * parseInt(tempMax);
   var changesetCrypto=new etherpadCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
 
-  //TODO:xchan
-  console.log("recved encrypted Server Atext:");
-  console.log(serverVars);
-
-
-  //console.log("singleOperationTotalFileSize: "+serverVars.initialAttributedText.text.length/512+"KB");
-  //record.setTimeStamp('singleOperatonNewUserJoinTime', 'start');
   changesetCrypto.decryptAtext(serverVars.initialAttributedText, serverVars.apool);
- // record.setTimeStamp('singleOperatonNewUserJoinTime', 'end');
- // console.log("SingleOperationTotalKeystreamSize:"+changesetCrypto.getTotalKeystreamSize()+"KB");
-
- //TODO:xchan
-  console.log("recved decrypted Server Atext:");
-  console.log(serverVars);
 
   editor.setBaseAttributedText(serverVars.initialAttributedText, serverVars.apool);
   editor.setUserChangeNotificationCallback(wrapRecordingErrors("handleUserChanges", handleUserChanges));
@@ -328,25 +315,10 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
       var author = (msg.author || '');
       var apool = msg.apool;
       var testnewRev = msg.newRev;
-      //xchan
-      console.log("recved encrypted Changeset:");
-      console.log(msg);
 
-        // if(startFlag){
-        //        //record.setTimeStamp('jwyConcurrentTime', 'start');
-        //        startFlag = false;
-        //  }
-	// record.setTimeStamp('singleOperationClientDecryptTime', 'start');	//tyler lee: singleOperationTime
-       changeset=changesetCrypto.decryptCS(changeset,apool);
-       msg.changeset = changeset;
-      
-      //TODO:xchan
-      console.log("recved decrypted Server Atext:");
-      console.log(msg);
-	 //record.setTimeStamp('singleOperationClientDecryptTime', 'end');	//tyler lee: singleOperationTime
-      // When inInternationalComposition, msg pushed msgQueue.
-	 //TODO: 客户端排队时间：从解密完成到应用到本地之间的时间
-	// record.setTimeStamp('singleOperationClientQueueTime', 'start');	//tyler lee: singleOperationTime
+      changeset=changesetCrypto.decryptCS(changeset,apool);
+      msg.changeset = changeset;
+
       if (msgQueue.length > 0 || editor.getInInternationalComposition()) {
         if (msgQueue.length > 0) var oldRev = msgQueue[msgQueue.length - 1].newRev;
         else oldRev = rev;
@@ -370,23 +342,11 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         return;
       }
       rev = newRev;
-		//TODO: 文本生成速度过慢，队列不够长甚至不存在队列问题
-	 //record.setTimeStamp('singleOperationClientQueueTime', 'end');	//tyler lee: singleOperationTime
-	 //record.setTimeStamp('singleOperationClientApplyToBaseTime', 'start');	//tyler lee: singleOperationTime
       editor.applyChangesToBase(changeset, author, apool);
-	 //record.setTimeStamp('singleOperationClientApplyToBaseTime', 'end');	//tyler lee: singleOperationTime
-
-
-        //if((testnewRev-testoldrev) % 20 == 0){
-          //console.log('jwyConcurrentTotalRevisions = ' + (testnewRev-testoldrev));
-          //record.setTimeStamp('jwyConcurrentTime', 'end');
-          //startFlag = true;
-       //}
     }
     else if (msg.type == "ACCEPT_COMMIT")
     {
 		//the changeset sent has been committed and apply to self window
-	// record.setTimeStamp("singleOperationFromClientToServerToClientTime", "end");
       var newRev = msg.newRev;
       if (msgQueue.length > 0)
       {

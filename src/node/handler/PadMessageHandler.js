@@ -39,9 +39,6 @@ var channels = require("channels");
 var stats = require('../stats');
 var remoteAddress = require("../utils/RemoteAddress").remoteAddress;
 
-//TODO: tyler lee time test,导入自定义时间记录模块
-//var record=require('./RecordTimeServer.js');
-
 /**
  * A associative array that saves informations about a session
  * key = sessionId
@@ -162,7 +159,6 @@ exports.handleDisconnect = function(client)
       //Go trough all user that are still on the pad, and send them the USER_LEAVE message
       client.broadcast.to(session.padId).json.send(messageToTheOtherUsers);
 
-//TODO: tyler lee
       // Allow plugins to hook into users leaving the pad
       hooks.callAll("userLeave", session);
     });
@@ -760,11 +756,7 @@ function handleUserChanges(data, cb)
                 stats.meter('failedChangesets').mark();
                 return callback(new Error("Won't apply USER_CHANGES, because it contains an already accepted changeset"));
               }
-		//TODO: 测试服务器OT排队时间test server OT Follow time
-		//record.setTimeStamp('ServerOperationOTFollowTime','start');
               changeset = Changeset.follow(c, changeset, false, apool);
-		//record.setTimeStamp('ServerOperationOTFollowTime','end');
-		//record.recordTimeStamp('ServerOperationOTFollowTime');
             }catch(e){
               client.json.send({disconnect:"badChangeset"});
               stats.meter('failedChangesets').mark();
