@@ -528,6 +528,10 @@ var pad = {
 	if(!sessionStorage.userId) {
 		sessionStorage.userId = prompt("Please tell me userId","userId");
 	}
+	//TODO: check whether padPassword is cached.
+	if(!sessionStorage.padPassword) {
+		sessionStorage.padPassword = prompt("Please tell me padPassword","padPassword");
+	}
   },
   _afterHandshake: function()
   {
@@ -551,10 +555,11 @@ var pad = {
       {}
     }
 
-	//TODO: get userName from sessionStorage
+	//TODO: get userName and padPassword from sessionStorage
 	if(!clientVars.userName) {
 		clientVars.userName = sessionStorage.userName;
 	}
+	pad.padPassword = sessionStorage.padPassword;
 
     // order of inits is important here:
     pad.myUserInfo = {

@@ -123,8 +123,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
   editor.setProperty("userAuthor", userId);
 
   //TODO: key info need to be set first, we should set this in pad.init as part of pad structure.
-  var masterKey="";
-  var masterKey = prompt("Please enter password:","");
+  //var masterKey="";
+  //var masterKey = prompt("Please enter password:","");
+  var masterKey = _pad.padPassword;
   var ivStr="pG5CM4FxDagm8peJrtZ4"+randomString(4);
   var keyLength=128;
   var streamMaxLen = 256;
