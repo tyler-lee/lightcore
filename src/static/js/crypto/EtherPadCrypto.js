@@ -1,42 +1,32 @@
 var Changeset = require('../Changeset');
 var AttributePool=require('../AttributePool');
 var Crypto=require('./StreamCrypto');
+var addKeyInfoAttrib = require('./expandChangesetAttribute').addKeyInfoAttrib;
+var getCipherInfoAttribsFromApool = require('./expandChangesetAttribute').getCipherInfoAttribsFromApool;
 
 
-function randomString(len)
-  {
-    var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    var randomstring = '';
-    for (var i = 0; i < len; i++)
-    {
-      var rnum = Math.floor(Math.random() * chars.length);
-      randomstring += chars.substring(rnum, rnum + 1);
-    }
-    return randomstring;
-  }
 var DocsCrypto=function(uid,masterkey,keyLen,streamMaxLength,ivStr){
-this.encryptor=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
-this.decryptList={};
-this.masterkey=masterkey;
-this.keyLen=keyLen;
-this.userId=uid;
-this.streamMaxLength = streamMaxLength;
-this.ivStr=ivStr.substring(0,64);
-//增加一个全局的指示当前位置信息的变量
-this.currentLine=0;
+	this.encryptor=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
+	this.decryptList={};
+	this.masterkey=masterkey;
+	this.keyLen=keyLen;
+	this.userId=uid;
+	this.streamMaxLength = streamMaxLength;
+	this.ivStr=ivStr.substring(0,64);
 }
 
-//TODO：增加一个重置标识，指明是否进行了跳转需要重置IV重新初始化
+//TODO：udpate StreamCrypto module, removing isResetIV feature
 DocsCrypto.prototype.encryptCharBank=function(charBank, isResetIV)
 {
-  return this.encryptor.encrypt(charBank, isResetIV);
-
+	return this.encryptor.encrypt(charBank, isResetIV);
 }
+
 DocsCrypto.prototype.AddDecryptor=function(uid,masterkey,keyLen,streamMaxLength,ivStr){
- var newCrypto=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
- this.decryptList[uid]=newCrypto;
- return newCrypto;
+	var newCrypto=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
+	this.decryptList[uid]=newCrypto;
+	return newCrypto;
 };
+
 DocsCrypto.prototype.decryptCharBank=function(uid,charBank,ivStr,offset){
 	if(uid in this.decryptList){
 		return this.decryptList[uid].decrypt(charBank,ivStr,offset);
@@ -46,234 +36,172 @@ DocsCrypto.prototype.decryptCharBank=function(uid,charBank,ivStr,offset){
 		return newCrypto.decrypt(charBank,ivStr,offset);
 	}
 };
+
 DocsCrypto.prototype.getTotalKeystreamSize=function(){
-var rt=0;
-var ri=0;
-var re;
-for( var dcrypto in this.decryptList){
-  re=this.decryptList[dcrypto].getTotalSize();
-  rt+=re.totalKeySize;
-  ri+=re.initialTimes;
+	var rt=0;
+	var ri=0;
+	var re;
+	for( var dcrypto in this.decryptList){
+		re=this.decryptList[dcrypto].getTotalSize();
+		rt+=re.totalKeySize;
+		ri+=re.initialTimes;
+	}
+	return ri+"times ---"+rt/1024;
 }
-return ri+"times ---"+rt/1024;
-}
+
 DocsCrypto.prototype.encryptCS=function(unEncryptedChangeset,apool){
-	var newCS=unEncryptedChangeset;
+	var newCS = unEncryptedChangeset;
 	var cs = Changeset.unpack(newCS);
-	if(cs.charBank.length>0 && cs.charBank != '\n' && cs.charBank != '')
+
+	//if changeset's charBank is not NULL nor '\n', then we do encrypt and update key info attribute.
+	if(cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n')
 	{
-		var iterator = Changeset.opIterator(cs.ops)
-		,op
-		,assem = Changeset.smartOpAssembler();
-		//alert(newCS);
-		if(apool.nextNum<0)apool.nextNum=0;
+		var cipherObj = this.encryptCharBank(cs.charBank, false);
+		cs.charBank=cipherObj.ciphertext;
 
-		//记录操作的起始位置
-		var startLine=-1;
-		//标志是否已经取得行信息
-		var lineInfoGetted=false;
-		//标志是否需要使用新的IV：如果当前行与操作行不一致，则true，否则false
-		var isResetIV=false;
-		while(iterator.hasNext()) {
-			op = iterator.next();
+		newCS = Changeset.pack(cs.oldLen, cs.newLen, cs.ops, cs.charBank);
+		Changeset.checkRep(newCS);
 
-			//获取changeset中的行信息
-			if(!lineInfoGetted) {
-				if(op.lines>=0) {
-					startLine=op.lines;
-					lineInfoGetted=true;
-				}
-				else {
-					startLine=0;
-				}
-			}
-
-			if(op.opcode == '+') {
-				op.attribs=op.attribs+'*'+Number(apool.nextNum).toString(36);
-				flag=true;
-			}
-			assem.append(op)
-		}
-		//	 */
-		assem.endDocument();
-		if(flag){//encrypt the charBank
-			//TODO: isResetIV标识是否需要进行IV重置，true则重置，false则继续使用当前IV
-			//根据startLine和currentLine的位置关系确定isResetIV，如果二者相等，则继续使用当前IV，否则重置IV
-			if(startLine>=this.currentLine) {
-				isResetIV=false;
-			}
-			else {
-				isResetIV=true;
-				//维护this.currentLine信息
-				this.currentLine=startLine;
-			}
-			var encryptedResult=this.encryptCharBank(cs.charBank, isResetIV);
-			var keyInfoName='Key';
-			var keyinforvalue=encryptedResult.keyinfo;
-			var attrib=[keyInfoName||'',keyinforvalue||''];
-			apool.numToAttrib[apool.nextNum]=attrib;
-			apool.nextNum=apool.nextNum+1;
-			cs.charBank=encryptedResult.ciphertext;
-
-			newCS = Changeset.pack(cs.oldLen, cs.newLen, assem.toString(),cs.charBank);
-			Changeset.checkRep(newCS);
-       }
+		var keyInfo = cipherObj.keyinfo;
+		//update changeset with key info attribute
+		newCS = addKeyInfoAttrib(newCS, apool, keyInfo);
    }
+
    return newCS;
 }
 
 DocsCrypto.prototype.decryptCS=function(encryptedChangeset,apool){
 	var newCS=encryptedChangeset;
 	var cs = Changeset.unpack(newCS);
-	if(cs.charBank.length>0 && cs.charBank != '\n' && cs.charBank != ''){
+
+	//console.log(apool, encryptedChangeset)
+	//if changeset's charBank is not NULL nor '\n', then we do encrypt and update key info attribute.
+	if(cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n') {
 		var iterator = Changeset.opIterator(cs.ops)
-			,op
-			, assem = Changeset.smartOpAssembler();
-		var iv="";
-		var flag=false;
-		var keyNum=-1;
-		var authorId="";
+			,op;
+		var plaintext = '';
+		var count = 0;
 
-		var offset=0;
-		//var counter=0;
-		var sentry="";
+		while(iterator.hasNext()) {
+			op = iterator.next();
 
-		//get keyinformation
-		if(apool.numToAttrib){
-			for (var attr in apool.numToAttrib){
-				if(apool.numToAttrib[attr][0]=='author')authorId=apool.numToAttrib[attr][1];
-				// get the keyInfo which includes cryptoKey position and iv
-				if (apool.numToAttrib[attr][0] == 'Key')
-				{
-					var keyInfo=apool.numToAttrib[attr][1];
-					var nonce=keyInfo.substring(0,4);
-					iv = this.ivStr+nonce;
-					offset=parseInt(keyInfo.substring(4),16);
-					//counter= Math.floor(startPos / (this.keyLen/8));
-					//offset=startPos % (this.keyLen/8);
-					flag=true;
-					keyNum=attr;
-					break;
+			//only inserted chars will appear in charBank
+			if(op.opcode == '+') {
+				//process the given char from charBank
+				var ch = cs.charBank.substring(count, count + op.chars);
+				//note that, each insert operation only process one char
+				if(ch != '\n') {
+					var cipherInfo = getCipherInfoAttribsFromApool(apool, op.attribs);
+					//console.log(ch, count, cipherInfo.authorId, cipherInfo.nonce, cipherInfo.offset);
+					var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
+					ch = plainObj.plaintext;
 				}
+
+				plaintext += ch;
+				count += op.chars;
 			}
 		}
-		if(flag){
-			var lineInfoGetted=false;
-			while(iterator.hasNext()) {//update the op, remove the crypto attribute
-				op = iterator.next();
-
-				//获取changeset中的行信息
-				if(!lineInfoGetted) {
-					if(op.lines>=0) {
-						//更新当前行信息
-						this.currentLine=op.lines;
-					}
-				}
-
-				if(op.opcode == '+') { //a
-					var attriblist= op.attribs.split('*');
-					if(attriblist){//b
-						for(var att in attriblist){//c
-							var attribNum=attriblist[att];
-							if(attribNum==keyNum){//d
-								var re='*'+keyNum.toString();
-								op.attribs=op.attribs.replace(re,'');
-							} //d
-						}//c
-					}//b
-				} //a
-				assem.append(op)
-			}//endwhile
-			assem.endDocument();
-			//cs.charBank=Base64.decode(cs.charBank);
-			var ss = this.decryptCharBank(authorId,cs.charBank,iv,offset);
-			cs.charBank=ss.plaintext;
-			newCS = Changeset.pack(cs.oldLen, cs.newLen, assem.toString(), cs.charBank);
-		}//endif flag
+		cs.charBank = plaintext;
+		newCS = Changeset.pack(cs.oldLen, cs.newLen, cs.ops, cs.charBank);
+		Changeset.checkRep(newCS);
 	}
+
 	return newCS;
 }
 
 DocsCrypto.prototype.decryptAtext = function(atext, apool) {
-	// intentionally skips last newline char of atext
-	var iter = Changeset.opIterator(atext.attribs);
-	var plainText="";
-	var startPos=0;
-	var op = Changeset.newOp();
-	//var assem = Changeset.smartOpAssembler();
-	var newpool=new AttributePool();
-	newpool.fromJsonable(apool);
-	// var newtext=Base64.decode(atext.text);
-	var lineInfoGetted=false;
-	while (iter.hasNext()) {
-		iter.next(op);
-		var opvalue=1;
-		if(op.opcode=='-')
-			opvalue=-1;
+	var iterator = Changeset.opIterator(atext.attribs)
+	, text = atext.text
+	, op;
 
-		//获取changeset中的行信息
-		if(!lineInfoGetted) {
-			if(op.lines>=0) {
-				//更新当前行信息
-				this.currentLine=op.lines;
+	var newApool=new AttributePool();
+	newApool.fromJsonable(apool);
+
+	var plaintext = '';
+	var count = 0;
+
+	while(iterator.hasNext()) {
+		op = iterator.next();
+
+		//only inserted chars will appear in charBank
+		if(op.opcode == '+') {
+			//process the given char from charBank
+			var ch = text.substring(count, count + op.chars);
+			//note that, each insert operation only process one char
+			if(ch != '\n') {
+				var cipherInfo = getCipherInfoAttribsFromApool(newApool, op.attribs);
+				var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
+				ch = plainObj.plaintext;
 			}
+
+			plaintext += ch;
+			count += op.chars;
 		}
-
-		var dectext=atext.text.substring(startPos,startPos + (op.chars*opvalue));
-		startPos += op.chars*opvalue;
-		if(dectext!='\n'){
-			if(op.opcode=='+'){//opcode
-				var KeyInfo='';
-				var sentry='';
-				var attriblist= op.attribs.split('*');
-				var flag=-1;
-				var keyNum=-1;
-				var authorId="";
-				if(attriblist){ //attriblist
-					for(var att in attriblist){//for
-						var attribNum=attriblist[att];
-						if(attribNum!=''){//attribNum
-							var attr = newpool.getAttrib(parseInt(attribNum, 36));
-							if(!attr){
-								console.log("bad attributNum of %d,cannot find it in apool",parseInt(attribNum, 36));
-								continue;
-							}
-							else if('Key' == attr[0]){
-                                                                KeyInfo=attr[1];//get crypto key Infomation
-                                                                keyNum=attribNum;
-                                                                flag++;
-                                                        }
-                                                        else if('author'==attr[0]){
-                                                                authorId=attr[1];
-                                                                flag ++;
-                                                        }
-                                                        if(KeyInfo !='' && authorId != "")
-                                                                        break;
-
-						}//end attribNum
-					}//endfor
-				}//end attriblistAes
-				if(flag==1)
-				{
-					var nonce=KeyInfo.substring(0,4);
-					var iv=this.ivStr+nonce;
-					//var startKeyPos=parseInt(KeyInfo.substring(4),16);
-					//var counter= Math.floor(startKeyPos / (this.keyLen/8));
-					//var offset = startKeyPos % (this.keyLen/8);
-					var offset=parseInt(KeyInfo.substring(4),16);
-					var ss=this.decryptCharBank(authorId,dectext,iv,offset);
-					dectext=ss.plaintext;
-					nextPos=ss.nextpos;
-					newpool.numToAttrib[parseInt(keyNum, 36)][1]=nonce+nextPos;
-				}
-			}//end opcode
-		}//end dectext
-		plainText+=dectext;
-		//   assem.append(op);
-	}//end while
-	atext.text=plainText;
+	}
+	atext.text = plaintext;
 }
+
 module.exports = DocsCrypto;
 
+/*
+//test part
+function randomString(length)
+{
+	var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	var randomString = '';
+	for (var i = 0; i < length; i++)
+	{
+		var index = Math.floor(Math.random() * chars.length);
+		randomString += chars.substring(index, index + 1);
+	}
+	return randomString;
+}
 
+var masterKey="hello123kitty";
+var userId = 'tyler lee';
+var ivStr=randomString(68);
+var keyLength=128;
+var streamMaxLen = 256;
+var tempMax = "4";
+streamMaxLen = streamMaxLen * parseInt(tempMax);
+var changesetCrypto=new DocsCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
+
+var changeset = 'Z:z>b|2=m=b*0|1+b$123\n4567890';
+var apool = new AttributePool();
+apool.numToAttrib = { '0': [ 'author', userId ], '1': [ 'bold', 'true' ] };
+apool.nextNum = 2;
+
+////test encrypt and decrypt changeset
+//var changeset = 'Z:u>a|a=t*0|3+7*0+3$\nasd\nf\nasd';
+//var apool = new AttributePool();
+//apool.numToAttrib = { '0': [ 'author', userId ] };
+//apool.nextNum = 1;
+
+var encryptedChangeset=changesetCrypto.encryptCS(changeset, apool);
+var decryptedChangeset=changesetCrypto.decryptCS(encryptedChangeset, apool);
+if((decryptedChangeset.split('$'))[1] === (changeset.split('$'))[1]) {
+	console.log("Encrypt and decrypt changeset success\n")
+}
+else {
+	console.log("Encrypt and decrypt changeset fail\n")
+	console.log(changeset);
+	console.log(decryptedChangeset);
+}
+
+//test decryptAtext
+var text = 'Z:0>b*0|1+b$123\n4567890';
+var encryptedText=changesetCrypto.encryptCS(text, apool);
+var atext = {};
+atext.attribs = '*0*2*d+1*0*2*e+1*0*2*f+1*0|1+1*0*2*g+1*0*2*h+1*0*2*i+1*0*2*j+1*0*2*k+1*0*2*l+1*0*2*m+1';
+atext.text = (encryptedText.split('$'))[1];
+changesetCrypto.decryptAtext(atext, apool);
+if(atext.text === (text.split('$'))[1]) {
+	console.log("Decrypt atext success\n")
+}
+else {
+	console.log("Decrypt atext fail\n")
+	console.log(text);
+	console.log(atext.text);
+}
+//*/
 

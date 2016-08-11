@@ -313,7 +313,7 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 	}
 	//存储本次加密明文所用的相关信息
 	//这里存储的是密钥流的绝对起始位置
-	var offset=(baseoffset).toString(16);
+	var offset=(baseoffset).toString(36);
 	//nonce有4个字节, ivStr头64个字符是Hmac值，最后4个字符作为IV的标识
 	var nonce=this.ivStr.substring(64);
 	var keyInfo=nonce+offset;
@@ -324,7 +324,7 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 	}
 
 	//加密返回结果包括密文以及加密所使用密钥流的位置相关信息
-	return {ciphertext:ciphertext,keyinfo:keyInfo};
+	return {'ciphertext': ciphertext, 'keyinfo': keyInfo};
 };
 
 
@@ -393,10 +393,38 @@ StreamCrypto.prototype.decrypt=function(ciphertext,ivStr,offset){
 		finisedCount++;
 	}
 
-	var nextPos=(this.cursor).toString(16);
-	//返回明文，以及当前已解密的明文末尾（也即明文长度）
-	return {plaintext:plaintext, nextpos:nextPos};
+	return {'plaintext': plaintext};
 };
 
 //导出该封装后的密码模块
 module.exports = StreamCrypto;
+
+
+//test part
+/*
+var masterKey="hello123kitty";
+var ivStr=generateRandomString(68);
+var keyLength=128;
+
+var streamCryptoTest=new StreamCrypto("tylerlee",masterKey, keyLength, 1024, ivStr);
+
+var length=1023;	//TODO: set plaintext length
+//var length=(512<<10);	//TODO: set plaintext length
+var text=generateRandomString(length);
+
+var cipher1=streamCryptoTest.encrypt(text,false);
+console.log(cipher1.keyinfo);
+var cipher2=streamCryptoTest.encrypt(text,false);
+console.log(cipher2.keyinfo);
+var plain1=streamCryptoTest.decrypt(cipher1.ciphertext, ivStr.substring(0, 64) + cipher1.keyinfo.substring(0, 4), parseInt(cipher1.keyinfo.substring(4)));
+var plain2=streamCryptoTest.decrypt(cipher2.ciphertext, ivStr.substring(0, 64) + cipher2.keyinfo.substring(0, 4), parseInt(cipher2.keyinfo.substring(4)));
+
+if(text === plain1.plaintext && text == plain2.plaintext) {
+	console.log("Encrypt and decrypt success\n")
+}
+else {
+	console.log("Encrypt and decrypt fail\n")
+}
+
+//*/
+

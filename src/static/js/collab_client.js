@@ -210,7 +210,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
     var userChangesData = editor.prepareUserChangeset();
     if (userChangesData.changeset)
     {
+		//console.log('in handleUserChanges: ' + userChangesData.changeset);
 	  userChangesData.changeset=changesetCrypto.encryptCS(userChangesData.changeset,userChangesData.apool);
+		//console.log('in handleUserChanges: ' + userChangesData.changeset);
       lastCommitTime = t;
       state = "COMMITTING";
       stateMessage = {
