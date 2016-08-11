@@ -21,7 +21,7 @@ this.masterkey=masterkey;
 this.keyLen=keyLen;
 this.userId=uid;
 this.streamMaxLength = streamMaxLength;
-this.ivStr=ivStr.substring(0,20);
+this.ivStr=ivStr.substring(0,64);
 //增加一个全局的指示当前位置信息的变量
 this.currentLine=0;
 }
@@ -89,7 +89,7 @@ DocsCrypto.prototype.encryptCS=function(unEncryptedChangeset,apool){
 			}
 
 			if(op.opcode == '+') {
-				op.attribs=op.attribs+'*'+apool.nextNum.toString();
+				op.attribs=op.attribs+'*'+Number(apool.nextNum).toString(36);
 				flag=true;
 			}
 			assem.append(op)

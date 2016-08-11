@@ -175,8 +175,8 @@ function generateRandomString(length)
 /*
  * 生成一个IV
  */
-function generateIV() {
-	var ivStr="pG5CM4FxDagm8peJrtZ4"+generateRandomString(4);
+StreamCrypto.prototype.generateIV = function () {
+	var ivStr = this.ivStr.substring(0, 64) + generateRandomString(4);
 	return ivStr;
 }
 
@@ -207,7 +207,7 @@ StreamCrypto.prototype.reset=function(ivStr){
  * 用给定IV重置加密子
  */
 StreamCrypto.prototype.resetEncryptor=function() {
-       var newIV=generateIV();
+       var newIV=this.generateIV();
        this.reset(newIV);
 }
 
