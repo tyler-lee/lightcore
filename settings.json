@@ -15,8 +15,9 @@
   "favicon": "favicon.ico",
 
   //IP and port which etherpad should bind at
-  "ip": "172.31.31.234",
-  "port" : 80,
+  "ip": "0.0.0.0",
+  //"port" : 80,
+  "port" : 9002,
 
   /*
   // Node native SSL support
@@ -53,7 +54,8 @@
   */
 
   //the default text of a pad
-  "defaultPadText" : "Welcome to Etherpad!\n\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\n\nGet involved with Etherpad at http:\/\/etherpad.org\n",
+  //"defaultPadText" : "Welcome to Etherpad!\n\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\n\nGet involved with Etherpad at http:\/\/etherpad.org\n",
+  "defaultPadText" : "",
 
   /* Default Pad behavior, users can override by changing */
   "padOptions": {
@@ -71,7 +73,7 @@
   },
 
   /* Should we suppress errors from being visible in the default Pad Text? */
-  "suppressErrorsInPadText" : false,
+  "suppressErrorsInPadText" : true,
 
   /* Users must have a session to access pads. This effectively allows only group pads to be accessed. */
   "requireSession" : false,
