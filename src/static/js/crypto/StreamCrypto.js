@@ -67,7 +67,7 @@ StreamCrypto.prototype.initMappingArray = function(masterkey) {
 	//必须显示初始化js数组，真是好麻烦
 	for(var a =0;a<16;a++)
 		this.mapArray.push(-1);
-	
+
 
 	//实际加密前最高8比特可能的数值，往右移动成为检索下标
 	var indexA = new Array(0x00,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0F);
@@ -83,7 +83,7 @@ StreamCrypto.prototype.initMappingArray = function(masterkey) {
 		//删除已经使用的合法区域，并且减少长度
 		legalAera.splice(At_legalAera,1);
 		legalAeraLen = legalAeraLen - 1;
-	}	
+	}
 }
 
 
@@ -107,7 +107,7 @@ StreamCrypto.prototype.doMaps = function(top8bits) {
 		console.log(this.mapArray);
 		return top8bits;
 	}
-	
+
 	return this.mapArray[a];
 }
 
@@ -188,7 +188,7 @@ StreamCrypto.prototype.reset=function(ivStr){
 	streamCryptoJS.Finalize(this.streamCryptor);
 	//以下三条语句存在顺序问题，不可以颠倒
 	//更新IV
-        
+
 	this.ivStr=ivStr;
 	//生成与新IV相关的新密钥
 	this.key=generateKey(this.userId+this.ivStr,this.masterkey,this.keyLength*8);
@@ -200,7 +200,7 @@ StreamCrypto.prototype.reset=function(ivStr){
 	//重置后应该要重置新IV密钥流所使用的位置
 	this.cursor=0;
         this.ivResetTimes +=1;
-        
+
 };
 
 /*
@@ -260,7 +260,7 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 	//根据传入明文的大小，一次性先将需要的密钥流生成出来
 	if(isResetIV) {
 		if(this.cursor>0) {
-			//当前IV已经使用过了，尽管没有使用达到最大长度，也更新			
+			//当前IV已经使用过了，尽管没有使用达到最大长度，也更新
 			this.resetEncryptor();
 		}
 		else {
@@ -291,7 +291,7 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 			//加密
 			highByte = (plain >> 8);
 			lowByte = (plain & 0x00FF);
-			
+
 			var top8bits = highByte & 0xf0;
 			highByte = (highByte ^ this.stream[this.cursor]) & 0x0f;
 
@@ -300,11 +300,11 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 
 			lowByte=((plain&0x00FF)^this.stream[this.cursor+1]);
 			cipher = (highByte << 8) | lowByte;
-				
+
 			if(cipher==10) {
 				cipher=0;
 			}
-			this.cursor+=2;		
+			this.cursor+=2;
 		}
 		ciphertext+=String.fromCharCode(cipher);
 		//处理完一个字符
@@ -314,8 +314,8 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 	//存储本次加密明文所用的相关信息
 	//这里存储的是密钥流的绝对起始位置
 	var offset=(baseoffset).toString(16);
-	//nonce有4个字节
-	var nonce=this.ivStr.substring(20);
+	//nonce有4个字节, ivStr头64个字符是Hmac值，最后4个字符作为IV的标识
+	var nonce=this.ivStr.substring(64);
 	var keyInfo=nonce+offset;
 	//本次加密结束后，判断是否需要更换IV，这部分语句必须要放在生成nonce之后，否则存储的就是更新后的IV信息了，这样必然会导致解密错误
 	if(this.cursor>=this.streamMaxLength) {
@@ -371,22 +371,22 @@ StreamCrypto.prototype.decrypt=function(ciphertext,ivStr,offset){
 			if(cipher == 0x0000) {
 				cipher = 0x000A;
 			}
-			
+
 			highByte=(cipher>>8);
 			lowByte=(cipher&0x00FF);
-			//console.log("keyStream "+this.stream[this.cursor]+" "+this.stream[this.cursor+1]);		
-			
+			//console.log("keyStream "+this.stream[this.cursor]+" "+this.stream[this.cursor+1]);
+
 			var top8bits = highByte & 0xf0;
 			top8bits = this.undoMaps(top8bits);
 
 			highByte = (highByte ^ this.stream[this.cursor]) & 0x0f;
 			highByte = highByte | top8bits;
 			lowByte = lowByte^this.stream[this.cursor+1];
-		
+
 
 			plain = (highByte << 8) | lowByte;
 			//console.log("decrypt from cipher:" + (cipher>>8)+ "  "+(cipher&0x00FF) +" to :"+ plain);
-			this.cursor+=2;		
+			this.cursor+=2;
 
 		}
 		plaintext+=String.fromCharCode(plain);

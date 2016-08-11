@@ -22,29 +22,16 @@
 
 var chat = require('./chat').chat;
 var hooks = require('./pluginfw/hooks');
+var Changeset=require('./Changeset');
 
 //TODO: add by tyler lee
-var Changeset=require('./Changeset');
 //TODO: select crypto module
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
+var HmacSHA256= require('./crypto/hmac-sha256').HmacSHA256;
 //var etherpadCrypto=require('./crypto/EtherPadCryptoAES');
 var AttributePool = require("./AttributePool");
+var randomString = require('./pad_utils').randomString;
 //tyler lee add
-//var record=require('./RecordTimeClient');
-
-
-function randomString(len)
-  {
-    var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    var randomstring = '';
-    for (var i = 0; i < len; i++)
-    {
-      var rnum = Math.floor(Math.random() * chars.length);
-      randomstring += chars.substring(rnum, rnum + 1);
-    }
-    return randomstring;
-  }
-//add end
 
 // Dependency fill on init. This exists for `pad.socket` only.
 // TODO: bind directly to the socket.
@@ -123,10 +110,9 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
   editor.setProperty("userAuthor", userId);
 
   //TODO: key info need to be set first, we should set this in pad.init as part of pad structure.
-  //var masterKey="";
-  //var masterKey = prompt("Please enter password:","");
   var masterKey = _pad.padPassword;
-  var ivStr="pG5CM4FxDagm8peJrtZ4"+randomString(4);
+  var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
+  var ivStr=deriveIV + '' + randomString(4);	//of length 68
   var keyLength=128;
   var streamMaxLen = 256;
   var tempMax = "4";
@@ -224,9 +210,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
     var userChangesData = editor.prepareUserChangeset();
     if (userChangesData.changeset)
     {
-	  //record.setTimeStamp('singleOperationEncryptTime', 'start');
 	  userChangesData.changeset=changesetCrypto.encryptCS(userChangesData.changeset,userChangesData.apool);
-	  //record.setTimeStamp('singleOperationEncryptTime', 'end');	//tyler lee: singleOperationTime
       lastCommitTime = t;
       state = "COMMITTING";
       stateMessage = {
@@ -235,7 +219,6 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         changeset: userChangesData.changeset,
         apool: userChangesData.apool
       };
-	  //record.setTimeStamp("singleOperationFromClientToServerToClientTime", "start");
       sendMessage(stateMessage);
       sentMessage = true;
       callbacks.onInternalAction("commitPerformed");
