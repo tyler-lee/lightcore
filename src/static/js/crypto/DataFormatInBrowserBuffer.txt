@@ -1,0 +1,29 @@
+1、存储位置
+	我们统一把数据存储在sessionStorage中，后续根据需要再调整。
+	即：saver = sessionStorage
+
+2、存储格式
+	{saver}.__secbookUsername = username;
+	{saver}['__secbook_' || {saver}.__secbookUsername] =
+		{
+			userName: 'xxxx',
+			userId: 'xxxx',
+			passwords:
+				{
+					encPassword: 'xxxx',
+					{padId}: 'xxxx',
+					...	: 'xxxx',
+					{padId}: 'xxxx'
+				}
+		}
+	根据需要，对象中的某些域可以不要。
+3、示例
+	sessionStorage.__secbookUsername = 'secbookuser';
+	var key = sessionStorage.__secbookUsername;
+	sessionStorage[key] = {};
+	sessionStorage[key].userName = 'secbookuser';
+	...
+	sessionStorage[key].passwords = {};
+	var padId = 'padId';
+	sessionStorage[key].passwords[padId] = 'padPassword';
+
