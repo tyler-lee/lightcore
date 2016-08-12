@@ -311,12 +311,10 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 		finisedCount++;
 
 	}
-	//存储本次加密明文所用的相关信息
-	//这里存储的是密钥流的绝对起始位置
-	var offset=(baseoffset).toString(36);
+	//存储本次加密明文所用的相关信息, 这里存储的是密钥流的绝对起始位置
 	//nonce有4个字节, ivStr头64个字符是Hmac值，最后4个字符作为IV的标识
 	var nonce=this.ivStr.substring(64);
-	var keyInfo=nonce+offset;
+
 	//本次加密结束后，判断是否需要更换IV，这部分语句必须要放在生成nonce之后，否则存储的就是更新后的IV信息了，这样必然会导致解密错误
 	if(this.cursor>=this.streamMaxLength) {
 		//已经达到或超过最大加密长度，立即更新IV
@@ -324,7 +322,7 @@ StreamCrypto.prototype.encrypt=function(plaintext, isResetIV){
 	}
 
 	//加密返回结果包括密文以及加密所使用密钥流的位置相关信息
-	return {'ciphertext': ciphertext, 'keyinfo': keyInfo};
+	return {'ciphertext': ciphertext, 'nonce': nonce, 'offset': baseoffset};
 };
 
 

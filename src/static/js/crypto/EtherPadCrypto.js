@@ -1,8 +1,15 @@
+/*
+* Author: Tyler Lee
+* Email: leehuorong@gmail.com
+*
+* All rights reserved.
+*/
+
 var Changeset = require('../Changeset');
 var AttributePool=require('../AttributePool');
 var Crypto=require('./StreamCrypto');
-var addKeyInfoAttrib = require('./expandChangesetAttribute').addKeyInfoAttrib;
-var getCipherInfoAttribsFromApool = require('./expandChangesetAttribute').getCipherInfoAttribsFromApool;
+var putCipherInfoAttribs = require('./CipherInfoAttributeManager').putCipherInfoAttribs;
+var getCipherInfoAttribs = require('./CipherInfoAttributeManager').getCipherInfoAttribs;
 
 
 var DocsCrypto=function(uid,masterkey,keyLen,streamMaxLength,ivStr){
@@ -62,9 +69,11 @@ DocsCrypto.prototype.encryptCS=function(unEncryptedChangeset,apool){
 		newCS = Changeset.pack(cs.oldLen, cs.newLen, cs.ops, cs.charBank);
 		Changeset.checkRep(newCS);
 
-		var keyInfo = cipherObj.keyinfo;
 		//update changeset with key info attribute
-		newCS = addKeyInfoAttrib(newCS, apool, keyInfo);
+		var cipherInfo = {};
+		cipherInfo.nonce = cipherObj.nonce;
+		cipherInfo.offset = cipherObj.offset;
+		newCS = putCipherInfoAttribs(newCS, apool, cipherInfo);
    }
 
    return newCS;
@@ -91,7 +100,7 @@ DocsCrypto.prototype.decryptCS=function(encryptedChangeset,apool){
 				var ch = cs.charBank.substring(count, count + op.chars);
 				//note that, each insert operation only process one char
 				if(ch != '\n') {
-					var cipherInfo = getCipherInfoAttribsFromApool(apool, op.attribs);
+					var cipherInfo = getCipherInfoAttribs(apool, op.attribs);
 					//console.log(ch, count, cipherInfo.authorId, cipherInfo.nonce, cipherInfo.offset);
 					var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
 					ch = plainObj.plaintext;
@@ -114,8 +123,12 @@ DocsCrypto.prototype.decryptAtext = function(atext, apool) {
 	, text = atext.text
 	, op;
 
-	var newApool=new AttributePool();
-	newApool.fromJsonable(apool);
+	//make sure apool is an instance of AttributePool.
+	if(!(apool instanceof AttributePool)) {
+		var tempApool = new AttributePool();
+		tempApool.fromJsonable(apool);
+		apool = tempApool;
+	}
 
 	var plaintext = '';
 	var count = 0;
@@ -129,7 +142,7 @@ DocsCrypto.prototype.decryptAtext = function(atext, apool) {
 			var ch = text.substring(count, count + op.chars);
 			//note that, each insert operation only process one char
 			if(ch != '\n') {
-				var cipherInfo = getCipherInfoAttribsFromApool(newApool, op.attribs);
+				var cipherInfo = getCipherInfoAttribs(apool, op.attribs);
 				var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
 				ch = plainObj.plaintext;
 			}

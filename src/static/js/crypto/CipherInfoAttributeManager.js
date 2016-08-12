@@ -1,4 +1,11 @@
 /*
+* Author: Tyler Lee
+* Email: leehuorong@gmail.com
+*
+* All rights reserved.
+*/
+
+/*
 # Changeset Library
 
 ```
@@ -53,50 +60,37 @@ var Changeset = require('../Changeset');
 var AttributePool = require('../AttributePool');
 
 /*
-* put attrib to apool and update apool info
-* Note:
-*	attrib should be in the following format: ['attribKey', 'attribValue']
-*/
-var putAttribToApool = function (apool, attrib) {
-	var str = String(attrib);
-	//if (str in apool.attribToNum) {
-	//	return apool.attribToNum[str];
-	//}
-	for(var index in apool.numToAttrib) {
-		if(str == apool.numToAttrib[index]) {
-			console.log('attribute %s is already existing', str);
-			return index;
-		}
-	}
-
-	var num = apool.nextNum++;
-	//apool.attribToNum[str] = num;
-	apool.numToAttrib[num] = [String(attrib[0] || ''), String(attrib[1] || '')];
-	return num;
-};
-exports.putAttribToApool = putAttribToApool;
-
-/*
  * This function unpack userChangeset and add key info to each char in the charBank,
  * and during this process, some new attrib will be create for each char, so this info
  * will be updated to apool for the userChangeset.
  *
- * key info is made of nonce||offset, which the first 4 chars are nonce and the left is offset.
- * offset is encoded into hexidecimal.
+ * cipherInfo is in following format:
+ *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': xx}
+ * offset is number.
+ * some of the field may be missing.
+ * TODO: Currently, authorId is no used.
  *
  * return: new userChangeset
  */
-var addKeyInfoAttrib = function (userChangeset, apool, keyInfo) {
+var putCipherInfoAttribs = function (userChangeset, apool, cipherInfo) {
+	//make sure apool is an instance of AttributePool.
+	if(!(apool instanceof AttributePool)) {
+		var tempApool = new AttributePool();
+		tempApool.fromJsonable(apool);
+		apool = tempApool;
+	}
+
+	//get authorId, nonce and offset
+	var nonce = cipherInfo.nonce || '';
+	var offset = cipherInfo.offset;
+	//put nonce attribute into apool
+	var nonceAttribNum = apool.putAttrib(['nonce', nonce]);
+	//var nonceAttribNum = putAttribToApool(apool, ['nonce', nonce]);
+
 	var cs = Changeset.unpack(userChangeset)
 	, iterator = Changeset.opIterator(cs.ops)
 	, op
 	, assem = Changeset.mergingOpAssembler();
-	//get nonce and offset
-	var nonce = keyInfo.substring(0, 4);
-	var offset = parseInt(keyInfo.substring(4), 36);
-	//put nonce attribute into apool
-	var nonceAttribNum = putAttribToApool(apool, ['nonce', nonce]);
-
 
 	//console.log(userChangeset, cs.ops);
 	var charCount = 0;
@@ -118,7 +112,8 @@ var addKeyInfoAttrib = function (userChangeset, apool, keyInfo) {
 					//append nonce attrib info
 					newOp.attribs += '*' + Number(nonceAttribNum).toString(36);
 					//put offset attribute into apool
-					var offsetAttribNum = putAttribToApool(apool, ['offset', Number(offset).toString(36)]);
+					var offsetAttribNum = apool.putAttrib(['offset', Number(offset).toString(36)]);
+					//var offsetAttribNum = putAttribToApool(apool, ['offset', Number(offset).toString(36)]);
 					//each char occupies two bytes
 					offset += 2;
 					newOp.attribs += '*' + Number(offsetAttribNum).toString(36);
@@ -141,14 +136,16 @@ var addKeyInfoAttrib = function (userChangeset, apool, keyInfo) {
 
 	return userChangeset;
 }
-exports.addKeyInfoAttrib = addKeyInfoAttrib;
+exports.putCipherInfoAttribs = putCipherInfoAttribs;
 
 /*
  * Function: get crypto info from apool according to the each operation's attribs.
  *
- * Return: {'authorId': xxx, 'nonce': xx, 'offset': xx}
+ * Return:
+ *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': xx}
+ * offset is number.
  */
-var getCipherInfoAttribsFromApool = function(apool, attribs) {
+var getCipherInfoAttribs = function(apool, attribs) {
 	var result = {};
 
 	var opAttribs= attribs.split('*');
@@ -160,6 +157,12 @@ var getCipherInfoAttribsFromApool = function(apool, attribs) {
 			console.log('Cannot find attribute %d in apool', attNum);
 		}
 
+		//make sure apool is an instance of AttributePool.
+		if(!(apool instanceof AttributePool)) {
+			var newApool=new AttributePool();
+			newApool.fromJsonable(apool);
+			apool = newApool;
+		}
 		var attrib = apool.getAttrib(attNum);
 		if(attrib[0] == 'author') {
 			result.authorId = attrib[1];
@@ -172,40 +175,38 @@ var getCipherInfoAttribsFromApool = function(apool, attribs) {
 		}
 	}
 
-	//TODO: we should check whether all the needed key info is get.
+	//TODO: we should check whether all the needed cipher info is get.
 
 	return result;
 }
-exports.getCipherInfoAttribsFromApool = getCipherInfoAttribsFromApool;
+exports.getCipherInfoAttribs= getCipherInfoAttribs;
 
 /*
 //test part
 var apool = new AttributePool();
-
-//test putAttribToApool
-putAttribToApool(apool, ['author', 'tyler']);
-putAttribToApool(apool, ['bold', 'true']);
+apool.putAttrib(['author', 'tyler']);
+apool.putAttrib(['bold', 'true']);
 var userChangeset = 'Z:z>b|2=m=b*0|1+b$123\n4567890'
-var keyInfo = 'ivstae';	//nonce: asdf		offset: 0
+var cipherInfo = {'nonce': 'ivst', 'offset': 234};
 
-//test addKeyInfoAttrib
+//test putCipherInfoAttribs
 //console.log('before expand:')
 //console.log(userChangeset, apool);
-userChangeset = addKeyInfoAttrib(userChangeset, apool, keyInfo);
+userChangeset = putCipherInfoAttribs(userChangeset, apool, cipherInfo);
 //console.log('after expand:')
 console.log(userChangeset, apool);	//Z:z>b|2=m=b*0*2*3+1*0*2*4+1*0*2*5+1*0|1+1*0*2*6+1*0*2*7+1*0*2*8+1*0*2*9+1*0*2*a+1*0*2*b+1*0*2*c+1$123\n4567890
 
-//test getCipherInfoAttribsFromApool
+//test getCipherInfoAttribs
 var attribs = '';
 var cipherInfo = {};
 attribs = '*0*2*3';
-cipherInfo = getCipherInfoAttribsFromApool(apool, attribs);
+cipherInfo = getCipherInfoAttribs(apool, attribs);
 console.log(cipherInfo);
 attribs = '*0*2*9';
-cipherInfo = getCipherInfoAttribsFromApool(apool, attribs);
+cipherInfo = getCipherInfoAttribs(apool, attribs);
 console.log(cipherInfo);
 attribs = '*0*2*b';
-cipherInfo = getCipherInfoAttribsFromApool(apool, attribs);
+cipherInfo = getCipherInfoAttribs(apool, attribs);
 console.log(cipherInfo);
 
 //*/
