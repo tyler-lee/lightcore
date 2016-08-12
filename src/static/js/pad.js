@@ -189,15 +189,24 @@ function sendClientReady(isReconnect, messageType)
 
   //var token = readCookie("token");
   /*
-   * TODO: using userId as token
+   * TODO: get userId and use userId as token
    * we use userId as token, so that Etherpad can recognize who current user is.
    */
-  var token = sessionStorage.userId;
-  if (token == null)
+  var token = null;
+  try
   {
-	alert("token is null");
-    token = "t." + randomString();
-    createCookie("token", token, 60);
+	var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
+	//TODO: check userName ...
+	if(sessionStorage.__secbookUsername != userInfo.userName) {
+	  alert('userName not match');
+	}
+	token = userInfo.userId;
+  }
+  catch (e)
+  {
+	alert('token is null.\nGet userId fail');
+	token = "t." + randomString();
+	createCookie("token", token, 60);
   }
 
   var sessionID = decodeURIComponent(readCookie("sessionID"));
@@ -516,21 +525,31 @@ var pad = {
       }
     });
 
-	//TODO: check whether sessionStorage is supported.
-	if(!window.sessionStorage) {
-		alert("window.sessionStorage feature is required.");
+	try {
+		//TODO: check whether sessionStorage is supported, and user info has been cached.
+		if(!window.sessionStorage) {
+			alert("window.sessionStorage feature is required.");
+		}
+		if(!sessionStorage.__secbookUsername) {
+			sessionStorage.__secbookUsername = prompt("Please tell me userName","Anonymous");
+			var userInfo = {
+				userName: sessionStorage.__secbookUsername,
+				userId: null,
+				passwords: {}
+			};
+			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+			//alert("Username is required.");
+		}
+		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
+		if(!userInfo.userId) {
+			userInfo.userId = prompt("Please tell me userId","userId");
+			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+			//alert("UserId is required.");
+		}
 	}
-	//TODO: check whether userName is cached.
-	if(!sessionStorage.userName) {
-		sessionStorage.userName = prompt("Please tell me userName","Anonymous");
-	}
-	//TODO: check whether userId is cached.
-	if(!sessionStorage.userId) {
-		sessionStorage.userId = prompt("Please tell me userId","userId");
-	}
-	//TODO: check whether padPassword is cached.
-	if(!sessionStorage.padPassword) {
-		sessionStorage.padPassword = prompt("Please tell me padPassword","padPassword");
+	catch (e)
+	{
+		alert('User info is missing');
 	}
   },
   _afterHandshake: function()
@@ -556,10 +575,32 @@ var pad = {
     }
 
 	//TODO: get userName and padPassword from sessionStorage
-	if(!clientVars.userName) {
-		clientVars.userName = sessionStorage.userName;
+	try {
+		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
+		if(sessionStorage.__secbookUsername != userInfo.userName) {
+			alert('userName not match');
+		}
+		if(!clientVars.userName) {
+			clientVars.userName = userInfo.userName;
+		}
+		if(clientVars.userName != userInfo.userName) {
+			alert('userName not match');
+		}
+
+		//check whether padPassword has been cached.
+		if(!userInfo.passwords[clientVars.padId]) {
+			userInfo.passwords = {};
+			userInfo.passwords[clientVars.padId] = prompt("Please tell me padPassword","padPassword");
+			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+			//alert('padPassword for pad (%s) is missing', clientVars.padId);
+		}
+
+		pad.padPassword = userInfo.passwords[clientVars.padId];
 	}
-	pad.padPassword = sessionStorage.padPassword;
+	catch (e)
+	{
+		alert('Get userName and padPassword fail');
+	}
 
     // order of inits is important here:
     pad.myUserInfo = {
