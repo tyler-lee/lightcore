@@ -215,7 +215,7 @@ else {
 var text = 'Z:0>b*0|1+b$123\n4567890';
 var encryptedText=changesetCrypto.encryptCS(text, apool);
 var atext = {};
-atext.attribs = '*0*2*d+1*0*2*e+1*0*2*f+1*0|1+1*0*2*g+1*0*2*h+1*0*2*i+1*0*2*j+1*0*2*k+1*0*2*l+1*0*2*m+1';
+atext.attribs = encryptedText.substring(encryptedText.indexOf('*'), encryptedText.lastIndexOf('$'));
 atext.text = (encryptedText.split('$'))[1];
 changesetCrypto.decryptAtext(atext, apool);
 if(atext.text === (text.split('$'))[1]) {
