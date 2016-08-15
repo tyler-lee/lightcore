@@ -1,5 +1,5 @@
 /**
- * (c) by Huorong Li. All rights reserved.
+ * (c) by Huorong Li (leehuorong@gmail.com). All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var AES = require('./aes'); 
+var AES = require('./aes');
 var HmacSHA256 = require('./hmac-sha256');
 
 
@@ -24,7 +24,7 @@ var computeHmac = function(message, passcode) {
 
 var isValidHmac = function(message, passcode, hmac) {
 	var tempHmac = computeHmac(message, passcode);
-	
+
 	if(hmac.sigBytes != tempHmac.sigBytes) {
 		return false;
 	}
@@ -33,7 +33,7 @@ var isValidHmac = function(message, passcode, hmac) {
 			return false;
 		}
 	}
-	
+
 	return true;
 }
 
@@ -44,23 +44,23 @@ Input:
 
 Output:
 	cipherPadPassword:	{cipher: CipherParams object strings, mac: {nonce: WordArray object, hmac: WordArray object}}
-	
+
 Note: mac is used to verify whether the plainPadPassword is correct. hmac is done upon the nonce with plainPadPassword.
 **/
 var encryptPadPassword = function(encPassword, plainPadPassword) {
 	//encrypt
 	var cipher = AES.encrypt(plainPadPassword, encPassword);
-	
+
 	//do hmac
 	var mac = {};
 	mac.nonce = AES.random(32);
 	mac.hmac = computeHmac(mac.nonce, plainPadPassword);
-	
+
 	//generate result
 	var cipherPadPassword = {};
 	cipherPadPassword.cipher = cipher.toString();
 	cipherPadPassword.mac = mac;
-	
+
 	return cipherPadPassword;
 }
 
@@ -77,13 +77,13 @@ Note: mac is used to verify whether the plainPadPassword is correct. hmac is don
 var decryptPadPassword = function(encPassword, cipherPadPassword) {
 	//decrypt
 	var plainPadPassword = AES.decrypt(cipherPadPassword.cipher, encPassword);
-	
+
 	//check hmac
 	var mac = cipherPadPassword.mac;
 	if(!isValidHmac(mac.nonce, plainPadPassword, mac.hmac)) {
 		return null;
 	}
-	
+
 	return plainPadPassword;
 }
 
@@ -92,7 +92,7 @@ exports.decryptPadPassword = decryptPadPassword;
 exports.computeHmac = computeHmac;
 exports.isValidHmac = isValidHmac;
 
-//* 
+//*
 var encPassword = 'encPassword';
 //var plain = 'strPlain';
 var plain = AES.random(8);

@@ -1,3 +1,19 @@
+/**
+ * (c) by Huorong Li (leehuorong@gmail.com). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS-IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //var streamCryptoJS=require('./rabbit');
 var streamCryptoJS=require('./rc4');
 var sha256JS=require('./hmac-sha256');
@@ -199,8 +215,7 @@ StreamCrypto.prototype.reset=function(ivStr){
 	this.stream=[];
 	//重置后应该要重置新IV密钥流所使用的位置
 	this.cursor=0;
-        this.ivResetTimes +=1;
-
+	this.ivResetTimes +=1;
 };
 
 /*
