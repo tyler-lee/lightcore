@@ -29,6 +29,8 @@ var createCookie = require('./pad_utils').createCookie;
 var readCookie = require('./pad_utils').readCookie;
 var randomString = require('./pad_utils').randomString;
 var hooks = require('./pluginfw/hooks');
+var etherpadCrypto=require('./crypto/EtherPadCrypto');
+var HmacSHA256= require('./crypto/hmac-sha256').HmacSHA256;
 
 var token, padId, export_links;
 
@@ -46,12 +48,50 @@ function init() {
     document.title = padId.replace(/_+/g, ' ') + " | " + document.title;
 
     //ensure we have a token
-    token = readCookie("token");
-    if(token == null)
-    {
-      token = "t." + randomString();
-      createCookie("token", token, 60);
-    }
+	//TODO: prepare user info
+	var changesetCrypto;
+	try {
+		if(!window.sessionStorage) {
+			alert("window.sessionStorage feature is required.");
+		}
+		if(!sessionStorage.__secbookUsername) {
+			alert("Username is required.");
+		}
+		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
+		if(sessionStorage.__secbookUsername != userInfo.userName) {
+			alert('userName not match');
+		}
+
+		//check whether padPassword has been cached.
+		if(!userInfo.passwords[padId]) {
+			alert('padPassword for pad (%s) is missing', padId);
+		}
+		if(!userInfo.userId) {
+			alert("UserId is required.");
+		}
+		token = userInfo.userId;
+
+		var masterKey = userInfo.passwords[padId];
+		var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
+		var ivStr=deriveIV + '' + randomString(4);	//of length 68
+		var keyLength=128;
+		var streamMaxLen = 256;
+		var tempMax = "4";
+		streamMaxLen = streamMaxLen * parseInt(tempMax);
+		changesetCrypto=new etherpadCrypto(userInfo.userId, masterKey, keyLength, streamMaxLen, ivStr);
+	}
+	catch (e)
+	{
+		alert('prepare user info fail');
+	}
+
+
+    //token = readCookie("token");
+    //if(token == null)
+    //{
+      //token = "t." + randomString();
+      //createCookie("token", token, 60);
+    //}
 
     var loc = document.location;
     //get the correct port
@@ -60,10 +100,10 @@ function init() {
     var url = loc.protocol + "//" + loc.hostname + ":" + port + "/";
     //find out in which subfolder we are
     var resource = exports.baseURL.substring(1) + 'socket.io';
-    
+
     //build up the socket io connection
     socket = io.connect(url, {path: exports.baseURL + 'socket.io', resource: resource});
-    
+
     //send the ready message once we're connected
     socket.on('connect', function()
     {
@@ -82,12 +122,40 @@ function init() {
 
       if(message.type == "CLIENT_VARS")
       {
+		//decrypt AText before apply to local
+		changesetCrypto.decryptAtext(message.data.collab_client_vars.initialAttributedText, message.data.collab_client_vars.apool);
         handleClientVars(message);
       }
       else if(message.accessStatus)
       {
         $("body").html("<h2>You have no permission to access this pad</h2>")
       } else {
+		//TODO: handle diff changeset data
+		if (message.type == "COLLABROOM")
+		{
+			//TODO: message type is COLLABROOM
+			console.log('tylerlee: COLLABROOM');
+			console.log(message);
+		}
+		else if(message.type == "CHANGESET_REQ")
+		{
+			//TODO: message type is CHANGESET_REQ
+			console.log('tylerlee: CHANGESET_REQ');
+			console.log(message);
+
+			//TODO: decrypt all charBanks in backwards and forwards changesets before apply to local
+			for (var i = 0; i < message.data.backwardsChangesets.length; i++) {
+				message.data.backwardsChangesets[i] = changesetCrypto.decryptCS(message.data.backwardsChangesets[i], message.data.apool);
+			}
+			for (var i = 0; i < message.data.forwardsChangesets.length; i++) {
+				message.data.forwardsChangesets[i] = changesetCrypto.decryptCS(message.data.forwardsChangesets[i], message.data.apool);
+			}
+		}
+		else
+		{
+			debugLog("Unknown message type: " + message.type);
+		}
+
         changesetLoader.handleMessageFromServer(message);
       }
     });
@@ -126,13 +194,13 @@ function sendSocketMsg(type, data)
 }
 
 var fireWhenAllScriptsAreLoaded = [];
-  
+
 var changesetLoader;
 function handleClientVars(message)
 {
   //save the client Vars
   clientVars = message.data;
-  
+
   //load all script that doesn't work without the clientVars
   BroadcastSlider = require('./broadcast_slider').loadBroadcastSliderJS(fireWhenAllScriptsAreLoaded);
   require('./broadcast_revisions').loadBroadcastRevisionsJS();
