@@ -506,6 +506,59 @@ var pad = {
 
   init: function()
   {
+
+	try {
+		//check whether sessionStorage is supported, and user info has been cached.
+		if(!window.sessionStorage) {
+			alert("window.sessionStorage feature is required.");
+		}
+		//TODO: request from secbook: tell secbook to pass info, and wait for reply
+		var bUserInfoGet = false;
+		window.addEventListener(
+			'message',
+			function(event) {
+				//if message is not from parent, ignore
+				if(event.source != window.parent) return;
+				//if user info have get, ignore
+				if(bUserInfoGet) return;
+
+				var data = JSON.parse(event.data);
+				if(!data.userName) return;
+				if(!data.userId) return;
+				if(!data.padId) return;
+				if(!data.padPassword) return;
+				//if(!data.encPassword) return;
+
+				sessionStorage.__secbookUsername = data.userName;
+				var userInfo = {
+					'userName': data.userName,
+					'userId': data.userId,
+					'passwords': {
+						//'encPassword': data.encPassword,
+					}
+				};
+				userInfo.passwords[data.padId] = data.padPassword;
+				sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+
+				//all user info have get, set the flag
+				bUserInfoGet = true;
+			},
+			false
+		);
+
+		//check whether user info have get: if not post message to parent.
+		while(!bUserInfoGet) {
+			setTimeout(function(){
+				window.parent.postMessage('READY', 'http://secbook.rtisec.com');
+			}, 100);
+		}
+	}
+	catch (e)
+	{
+		alert('User info is missing');
+	}
+
+
     padutils.setupGlobalExceptionHandler();
 
     $(document).ready(function()
@@ -524,33 +577,6 @@ var pad = {
       //  $('#noCookie').show();
       //}
     });
-
-	try {
-		//TODO: check whether sessionStorage is supported, and user info has been cached.
-		if(!window.sessionStorage) {
-			alert("window.sessionStorage feature is required.");
-		}
-		if(!sessionStorage.__secbookUsername) {
-			sessionStorage.__secbookUsername = prompt("Please tell me userName","Anonymous");
-			var userInfo = {
-				userName: sessionStorage.__secbookUsername,
-				userId: null,
-				passwords: {}
-			};
-			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
-			//alert("Username is required.");
-		}
-		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
-		if(!userInfo.userId) {
-			userInfo.userId = prompt("Please tell me userId","userId");
-			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
-			//alert("UserId is required.");
-		}
-	}
-	catch (e)
-	{
-		alert('User info is missing');
-	}
   },
   _afterHandshake: function()
   {
@@ -575,6 +601,7 @@ var pad = {
     }
 
 	//TODO: get userName and padPassword from sessionStorage
+	//MUST be prior to getCollabClient
 	try {
 		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
 		if(sessionStorage.__secbookUsername != userInfo.userName) {
@@ -589,10 +616,7 @@ var pad = {
 
 		//check whether padPassword has been cached.
 		if(!userInfo.passwords[clientVars.padId]) {
-			userInfo.passwords = {};
-			userInfo.passwords[clientVars.padId] = prompt("Please tell me padPassword","padPassword");
-			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
-			//alert('padPassword for pad (%s) is missing', clientVars.padId);
+			alert('padPassword for pad (%s) is missing', clientVars.padId);
 		}
 
 		pad.padPassword = userInfo.passwords[clientVars.padId];
@@ -631,7 +655,7 @@ var pad = {
     pad.collabClient.setOnChannelStateChange(pad.handleChannelStateChange);
     pad.collabClient.setOnInternalAction(pad.handleCollabAction);
 
-	//TODO: add by tyler lee: updateUserInfo to server so that all other users will know
+	//TODO: updateUserInfo to server so that all other users will know
 	pad.collabClient.updateUserInfo(pad.myUserInfo);
 
     // load initial chat-messages

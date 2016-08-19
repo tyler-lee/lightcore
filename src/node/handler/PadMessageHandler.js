@@ -1042,6 +1042,7 @@ function handleClientReady(client, message)
         padIds = value;
         callback();
       });
+		//TODO: check user access rights and set readonly flag accordingly.
     },
     //check permissions
     function(callback)
