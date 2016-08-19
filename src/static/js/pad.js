@@ -523,6 +523,7 @@ var pad = {
 				if(bUserInfoGet) return;
 
 				var data = JSON.parse(event.data);
+				if(!data.isright) return;
 				if(!data.userName) return;
 				if(!data.userId) return;
 				if(!data.padId) return;
@@ -547,11 +548,14 @@ var pad = {
 		);
 
 		//check whether user info have get: if not post message to parent.
-		while(!bUserInfoGet) {
-			setTimeout(function(){
-				window.parent.postMessage('READY', 'http://secbook.rtisec.com');
-			}, 100);
+		if(!bUserInfoGet) {
+			window.parent.postMessage('READY', 'http://secbook.rtisec.com');
 		}
+		//while(!bUserInfoGet) {
+		//	setTimeout(function(){
+		//		window.parent.postMessage('READY', 'http://secbook.rtisec.com');
+		//	}, 100);
+		//}
 	}
 	catch (e)
 	{
