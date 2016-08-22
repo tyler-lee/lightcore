@@ -1,2 +1,11 @@
-ep_align ep_cursortrace ep_export_cp_html_image ep_headings ep_line_height ep_print ep_subscript_and_superscript ep_tasklist ep_word_edit
+ep_align ep_headings ep_print ep_subscript_and_superscript ep_font_color ep_font_family ep_font_size
 
+ep_rewrite_share_paths
+ep_export_cp_html_image
+ep_set_title_on_pad
+ep_line_height
+ep_cursortrace
+ep_tasklist
+ep_word_edit
+
+ep_word_edit has some problems. Use ep_font_color ep_font_family ep_font_size instead.
