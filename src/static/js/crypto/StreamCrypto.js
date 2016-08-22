@@ -387,7 +387,6 @@ StreamCrypto.prototype.decrypt=function(ciphertext,ivStr,offset){
 
 			highByte=(cipher>>8);
 			lowByte=(cipher&0x00FF);
-			//console.log("keyStream "+this.stream[this.cursor]+" "+this.stream[this.cursor+1]);
 
 			var top8bits = highByte & 0xf0;
 			top8bits = this.undoMaps(top8bits);
@@ -398,7 +397,6 @@ StreamCrypto.prototype.decrypt=function(ciphertext,ivStr,offset){
 
 
 			plain = (highByte << 8) | lowByte;
-			//console.log("decrypt from cipher:" + (cipher>>8)+ "  "+(cipher&0x00FF) +" to :"+ plain);
 			this.cursor+=2;
 
 		}
@@ -426,11 +424,9 @@ var length=1023;	//TODO: set plaintext length
 var text=generateRandomString(length);
 
 var cipher1=streamCryptoTest.encrypt(text,false);
-console.log(cipher1.keyinfo);
 var cipher2=streamCryptoTest.encrypt(text,false);
-console.log(cipher2.keyinfo);
-var plain1=streamCryptoTest.decrypt(cipher1.ciphertext, ivStr.substring(0, 64) + cipher1.keyinfo.substring(0, 4), parseInt(cipher1.keyinfo.substring(4)));
-var plain2=streamCryptoTest.decrypt(cipher2.ciphertext, ivStr.substring(0, 64) + cipher2.keyinfo.substring(0, 4), parseInt(cipher2.keyinfo.substring(4)));
+var plain1=streamCryptoTest.decrypt(cipher1.ciphertext, ivStr.substring(0, 64) + cipher1.nonce, cipher1.offset);
+var plain2=streamCryptoTest.decrypt(cipher2.ciphertext, ivStr.substring(0, 64) + cipher2.nonce, cipher2.offset);
 
 if(text === plain1.plaintext && text == plain2.plaintext) {
 	console.log("Encrypt and decrypt success\n")
