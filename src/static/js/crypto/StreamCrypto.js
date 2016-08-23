@@ -19,19 +19,17 @@ var streamCryptoJS=require('./rc4');
 var sha256JS=require('./hmac-sha256');
 var sha512JS=require('./hmac-sha512');
 
-var md5Js = require('./md5');
-
-generateKey=function(uid,masterKey,keyLength){
+generateKey=function(uid,masterkey,keyLength){
 	if(keyLength==512){
-		var keyBuff=sha512JS.CreatSHA512Hmac(uid,masterKey);
+		var keyBuff=sha512JS.CreatSHA512Hmac(uid,masterkey);
 		return keyBuff;
 	}
 	else if(keyLength==256){
-		var keyBuff=sha256JS.CreatSHA256Hmac(uid,masterKey);
+		var keyBuff=sha256JS.CreatSHA256Hmac(uid,masterkey);
 		return keyBuff;
 	}
 	else{// default 128bit 4=128/32
-		var keyBuff=sha256JS.CreatSHA256Hmac(uid,masterKey);
+		var keyBuff=sha256JS.CreatSHA256Hmac(uid,masterkey);
 		var hexstr=sha512JS.toHex(keyBuff);
 		var key=streamCryptoJS.toHex(hexstr.substring(0,32));
 		return key;
@@ -66,36 +64,35 @@ StreamCrypto=function(uid,masterkey,keyLength,streamMaxLength,ivStr){
 	this.ivResetTimes=1;
 
     //生成高8bits映射数组
-    this.initMappingArray(masterkey);
+	this.mapArray = [];
+    this.initMappingArray();
     //console.log(this.mapArray);
 };
 
 
-StreamCrypto.prototype.initMappingArray = function(masterkey) {
+StreamCrypto.prototype.initMappingArray = function() {
+	//0xD800~0xDFFF是非法区域
 	//可以被映射的合法字符区域，使用Streamkey的性质对这个区域的数字进行重新排列
 	//然后将中文可能出现的字符区间映射到这些字符区域，这也是相当于加密
-	var legalAera = new Array(0x00,0x10,0x20,0x30,0x40,0x50,0x60,0x70,0x80,0x90,0xa0,0xb0,0xc0);
-	var masterkeyhash = parseInt(md5Js.CreatMD5(masterkey).toString().substring(0,5),16);
+	var legalAera = [0x00,0x10,0x20,0x30,0x40,0x50,0x60,0x70,0x80,0x90,0xa0,0xb0,0xc0];
+	var masterkeyhash = parseInt(sha256JS.HmacSHA256('shuffle', this.masterkey).toString().substring(0, 5), 16);
 
 	//初始化长度为16的数组，用于存储映射后的值
-	//初始化其中的值全为零
-	this.mapArray = new Array();
 	//必须显示初始化js数组，真是好麻烦
 	for(var a =0;a<16;a++)
 		this.mapArray.push(-1);
 
 
-	//实际加密前最高8比特可能的数值，往右移动成为检索下标
-	var indexA = new Array(0x00,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0F);
+	//实际加密前最高4比特可能的数值，往右移动成为检索下标
+	var indexA = [0x00,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0F];
 
 	var  legalAeraLen = legalAera.length;
-	//将this.mapArray中对应着indexA的位置的数值根据MD5值进行映射
+	//将this.mapArray中对应着indexA的位置的数值根据Hmac值进行映射
 	//完成下标和值之间的11对应关系
 	for( x in indexA) {
 		var At_legalAera = masterkeyhash % legalAeraLen;
 		this.mapArray[ indexA[x] ] = legalAera[At_legalAera];
 
-		//console.log("this.mapArray[" + indexA[x] +"] = legalAera[" + At_legalAera + "] = " + legalAera[At_legalAera]);
 		//删除已经使用的合法区域，并且减少长度
 		legalAera.splice(At_legalAera,1);
 		legalAeraLen = legalAeraLen - 1;
@@ -413,11 +410,11 @@ module.exports = StreamCrypto;
 
 //test part
 /*
-var masterKey="hello123kitty";
+var masterkey="hello123kitty";
 var ivStr=generateRandomString(68);
 var keyLength=128;
 
-var streamCryptoTest=new StreamCrypto("tylerlee",masterKey, keyLength, 1024, ivStr);
+var streamCryptoTest=new StreamCrypto("tylerlee",masterkey, keyLength, 1024, ivStr);
 
 var length=1023;	//TODO: set plaintext length
 //var length=(512<<10);	//TODO: set plaintext length
