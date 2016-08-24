@@ -19,6 +19,7 @@ var streamCryptoJS=require('./rc4');
 var sha256JS=require('./hmac-sha256');
 var sha512JS=require('./hmac-sha512');
 
+//TODO: support general key length.
 generateKey=function(uid,masterkey,keyLength){
 	if(keyLength==512){
 		var keyBuff=sha512JS.CreatSHA512Hmac(uid,masterkey);

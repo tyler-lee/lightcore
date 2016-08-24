@@ -17,12 +17,13 @@ d[e>>>5]|=128<<24-e%32;d[(e+64>>>9<<4)+14]=h.floor(b/4294967296);d[(e+64>>>9<<4)
 (function(){var h=CryptoJS,s=h.enc.Utf8;h.algo.HMAC=h.lib.Base.extend({init:function(f,g){f=this._hasher=new f.init;"string"==typeof g&&(g=s.parse(g));var h=f.blockSize,m=4*h;g.sigBytes>m&&(g=f.finalize(g));g.clamp();for(var r=this._oKey=g.clone(),l=this._iKey=g.clone(),k=r.words,n=l.words,j=0;j<h;j++)k[j]^=1549556828,n[j]^=909522486;r.sigBytes=l.sigBytes=m;this.reset()},reset:function(){var f=this._hasher;f.reset();f.update(this._iKey)},update:function(f){this._hasher.update(f);return this},finalize:function(f){var g=
 this._hasher;f=g.finalize(f);g.reset();return g.finalize(this._oKey.clone().concat(f))}})})();
 
+//TODO: rewrite following two functions, and update any place that use them.
 exports.CreatSHA256Hmac=function(msg,cryptokey,format){
-var hash=CryptoJS.HmacSHA256(msg,cryptokey);
-return hash;
+	var hash=CryptoJS.HmacSHA256(msg,cryptokey);
+	return hash;
 }
 exports.toHex=function(hash){
-return hash.toString(CryptoJS.enc.Hex);
+	return hash.toString(CryptoJS.enc.Hex);
 }
 
 /*
@@ -39,5 +40,22 @@ var HmacSHA256 = function(message, passphrass) {
 	return CryptoJS.HmacSHA256(message, passphrass);
 }
 
+var hexToWordArray=function(hexStr) {
+	var wordArr=CryptoJS.enc.Hex.parse(hexStr);
+	return wordArr;
+}
+
+var wordArrayToHex=function(wordArr) {
+	var hex = CryptoJS.enc.Hex.stringify(wordArr);
+	return hex;
+}
+
+var random=function(bytes) {
+	return CryptoJS.lib.WordArray.random(bytes);
+}
+
+exports.hexToWordArray = hexToWordArray;
+exports.wordArrayToHex = wordArrayToHex;
+exports.random = random;
 exports.HmacSHA256Create = HmacSHA256Create;
 exports.HmacSHA256 = HmacSHA256;

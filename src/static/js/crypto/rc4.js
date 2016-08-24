@@ -34,24 +34,44 @@ d){b[d]^=s.call(this)},keySize:8,ivSize:0});l.RC4=e._createHelper(p);n=n.RC4Drop
 
 
 exports.Init=function(key){
-var rc4=CryptoJS.algo.RC4.createEncryptor(key);
-return rc4;
+	var rc4=CryptoJS.algo.RC4.createEncryptor(key);
+	return rc4;
 }
 exports.KeyEmpty=function(rc4,round1){
-var pHex={words:[0,0,0,0],sigBytes:16};
- for(var j=0;j<round1;j++)
-   rc4.process(pHex);
+	var pHex={words:[0,0,0,0],sigBytes:16};
+	for(var j=0;j<round1;j++)
+		rc4.process(pHex);
 }
 exports.KeyStream=function(rc4){
-var pHex={words:[0,0,0,0],sigBytes:16};
-var pc=rc4.process(pHex);
-return pc;
+	var pHex={words:[0,0,0,0],sigBytes:16};
+	var pc=rc4.process(pHex);
+	return pc;
 }
 exports.Finalize=function(rc4){
-return rc4.finalize();
+	return rc4.finalize();
 }
+
+//TODO: rewrite following functions, and update any place that use them.
 exports.toHex=function(str){
-var strHex=CryptoJS.enc.Hex.parse(str);
-return strHex;
+	var strHex=CryptoJS.enc.Hex.parse(str);
+	return strHex;
 }
+
+var hexToWordArray=function(hexStr) {
+	var wordArr=CryptoJS.enc.Hex.parse(hexStr);
+	return wordArr;
+}
+
+var wordArrayToHex=function(wordArr) {
+	var hex = CryptoJS.enc.Hex.stringify(wordArr);
+	return hex;
+}
+
+var random=function(bytes) {
+	return CryptoJS.lib.WordArray.random(bytes);
+}
+
+exports.hexToWordArray = hexToWordArray;
+exports.wordArrayToHex = wordArrayToHex;
+exports.random = random;
 
