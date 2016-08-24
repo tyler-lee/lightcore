@@ -8,13 +8,8 @@
 		{
 			userName: 'xxxx',
 			userId: 'xxxx',
-			passwords:
-				{
-					encPassword: 'xxxx',
-					{padId}: 'xxxx',
-					...	: 'xxxx',
-					{padId}: 'xxxx'
-				}
+			padPassword: 'xxxx',
+			readonly: true/false
 		}
 	根据需要，对象中的某些域可以不要。
 3、示例
@@ -23,7 +18,5 @@
 	sessionStorage[key] = {};
 	sessionStorage[key].userName = 'secbookuser';
 	...
-	sessionStorage[key].passwords = {};
-	var padId = 'padId';
-	sessionStorage[key].passwords[padId] = 'padPassword';
+	sessionStorage[key].padPpassword = 'padPassword';
 

@@ -189,18 +189,24 @@ function sendClientReady(isReconnect, messageType)
 
   //var token = readCookie("token");
   /*
-   * TODO: get userId and use userId as token
+   * get userId and use userId as token
    * we use userId as token, so that Etherpad can recognize who current user is.
    */
   var token = null;
+  var readonly = false;
   try
   {
 	var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
-	//TODO: check userName ...
+	//check userName ...
 	if(sessionStorage.__secbookUsername != userInfo.userName) {
 	  alert('userName not match');
 	}
 	token = userInfo.userId;
+
+	//get readonly attribute if existing.
+	if(userInfo.readonly == true) {
+		readonly = true;
+	}
   }
   catch (e)
   {
@@ -219,6 +225,7 @@ function sendClientReady(isReconnect, messageType)
     "sessionID": sessionID,
     "password": password,
     "token": token,
+    "readonly": readonly,
     "protocolVersion": 2
   };
 
@@ -514,6 +521,7 @@ var pad = {
 		}
 		//TODO: request from secbook: tell secbook to pass info, and wait for reply
 		var bUserInfoGet = false;
+
 		window.addEventListener(
 			'message',
 			function(event) {
@@ -534,11 +542,9 @@ var pad = {
 				var userInfo = {
 					'userName': data.userName,
 					'userId': data.userId,
-					'passwords': {
-						//'encPassword': data.encPassword,
-					}
+					'padPassword': data.padPassword,
+					'readonly': data.readonly
 				};
-				userInfo.passwords[data.padId] = data.padPassword;
 				sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
 
 				//all user info have get, set the flag
@@ -619,11 +625,11 @@ var pad = {
 		}
 
 		//check whether padPassword has been cached.
-		if(!userInfo.passwords[clientVars.padId]) {
-			alert('padPassword for pad (%s) is missing', clientVars.padId);
+		if(!userInfo.padPassword) {
+			alert('padPassword for pad (' + clientVars.padId + ') is missing');
 		}
 
-		pad.padPassword = userInfo.passwords[clientVars.padId];
+		pad.padPassword = userInfo.padPassword;
 	}
 	catch (e)
 	{

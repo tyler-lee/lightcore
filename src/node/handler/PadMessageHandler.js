@@ -991,6 +991,7 @@ function createSessionInfo(client, message)
     token : message.token,
     password: message.password
   };
+  sessioninfos[client.id].readonly = message.readonly;
 }
 
 /**
@@ -1161,7 +1162,9 @@ function handleClientReady(client, message)
       //Save in sessioninfos that this session belonges to this pad
       sessioninfos[client.id].padId = padIds.padId;
       sessioninfos[client.id].readOnlyPadId = padIds.readOnlyPadId;
-      sessioninfos[client.id].readonly = padIds.readonly;
+      //sessioninfos[client.id].readonly = padIds.readonly;
+		//TODO: set padIds.readonly
+      padIds.readonly = sessioninfos[client.id].readonly;
 
       //Log creation/(re-)entering of a pad
       var ip = remoteAddress[client.id];

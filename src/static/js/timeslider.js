@@ -63,15 +63,15 @@ function init() {
 		}
 
 		//check whether padPassword has been cached.
-		if(!userInfo.passwords[padId]) {
-			alert('padPassword for pad (%s) is missing', padId);
+		if(!userInfo.padPassword) {
+			alert('padPassword for pad (' + padId + ') is missing');
 		}
 		if(!userInfo.userId) {
 			alert("UserId is required.");
 		}
 		token = userInfo.userId;
 
-		var masterKey = userInfo.passwords[padId];
+		var masterKey = userInfo.padPassword;
 		var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
 		var ivStr=deriveIV + '' + randomString(4);	//of length 68
 		var keyLength=128;
