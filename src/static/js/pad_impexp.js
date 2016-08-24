@@ -199,6 +199,7 @@ var padimpexp = (function()
         $('#importsubmitinput').val(html10n.get("pad.impexp.importbutton"));
       })
 
+	  //TODO: remove export format we do not need
       // build the export links
       $("#exporthtmla").attr("href", pad_root_path + "/export/html");
       $("#exportetherpada").attr("href", pad_root_path + "/export/etherpad");
@@ -214,7 +215,7 @@ var padimpexp = (function()
         $("#exportpdfa").remove();
         $("#exportopena").remove();
 
-        $("#importmessageabiword").show();
+		$("#importmessageabiword").show();
       }
       else if(clientVars.exportAvailable == "withoutPDF")
       {
