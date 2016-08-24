@@ -26,10 +26,11 @@ this._hasher;a=b.finalize(a);b.reset();return b.finalize(this._oKey.clone().conc
 
 
 
+//TODO: delete this module
 exports.CreatSHA512Hmac=function(msg,cryptokey,format){
-var hash=CryptoJS.HmacSHA512(msg,cryptokey);
-return hash;
+	var hash=CryptoJS.HmacSHA512(msg,cryptokey);
+	return hash;
 }
 exports.toHex=function(hash){
-return hash.toString(CryptoJS.enc.Hex);
+	return hash.toString(CryptoJS.enc.Hex);
 }
