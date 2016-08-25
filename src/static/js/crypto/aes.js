@@ -36,70 +36,28 @@ d[k>>>24]^e[n>>>16&255]^j[g>>>8&255]^l[h&255]^c[p++],n=d[n>>>24]^e[g>>>16&255]^j
 
 /*
 Input:
-	either strings or instances of CryptoJS.lib.WordArray. For the key, when you pass a string, it's treated as a passphrase to derive an actual key and IV. Or you can pass a WordArray that represents the actual key. If you pass the actual key, you must also pass the actual IV.
-	
-Output: 
+	object.
+
+Output:
 	CryptoJS.lib.CipherParams object. A CipherParams object gives you access to all the parameters used during encryption. When you use a CipherParams object in a string context, it's automatically converted to a string according to a format strategy. The default is an OpenSSL-compatible format.
 */
-var encrypt=function(plaintext, passphrass) {
-	var ciphertextObj = CryptoJS.AES.encrypt(plaintext, passphrass);
-	//ciphertextObj is CipherParams object.
-	return ciphertextObj;
+var encrypt=function(plaintext, passcode) {
+	var ciphertext = CryptoJS.AES.encrypt(JSON.stringify(plaintext), passcode);
+	//ciphertextis CipherParams object.
+	return ciphertext;
 }
- 
+
 /*
-Input: 
-	either strings or instances of CryptoJS.lib.CipherParams. A CipherParams object represents a collection of parameters such as the IV, a salt, and the raw ciphertext itself. When you pass a string, it's automatically converted to a CipherParams object according to a configurable format strategy.
-	
-Output: CryptoJS.lib.WordArray object
+Input:
+	CryptoJS.lib.CipherParams object or string. A CipherParams object represents a collection of parameters such as the IV, a salt, and the raw ciphertext itself. When you pass a string, it's automatically converted to a CipherParams object according to a configurable format strategy.
+
+Output:
+	object.
 */
-var decrypt=function(ciphertext, passphrass) {
-	var plaintextObj = CryptoJS.AES.decrypt(ciphertext, passphrass);
-	//plaintextObj is WordArray object.
-	/*
-	it seems that after decrypted, WordArray object will be appended by some word.
-	before encrypted:
-	{ words:
-   [ 999633534,
-     1333181358,
-     -784887339,
-     1780289856,
-     1654292417,
-     416275336,
-     -1720977508,
-     1080943334 ],
-  sigBytes: 32 }
-
-	after decrypted:
-	{ words:
-   [ 999633534,
-     1333181358,
-     -784887339,
-     1780289856,
-     1654292417,
-     416275336,
-     -1720977508,
-     1080943334,
-     269488144,
-     269488144,
-     269488144,
-     269488144 ],
-  sigBytes: 32 }
-  
-  so, we first encode the WordArray to Hex string, then decode again.
-	*/	
-	plaintextObj = hexToWordArray(wordArrayToHex(plaintextObj));
-	return plaintextObj;
-}
-
-var hexToWordArray=function(hexStr) {
-	var wordArr=CryptoJS.enc.Hex.parse(hexStr);
-	return wordArr;
-}
-
-var wordArrayToHex=function(wordArr) {
-	var hex = CryptoJS.enc.Hex.stringify(wordArr);
-	return hex;
+var decrypt=function(ciphertext, passcode) {
+	var bytes = CryptoJS.AES.decrypt(ciphertext, passcode);
+	var plaintext = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+	return plaintext;
 }
 
 var random=function(bytes) {
@@ -108,6 +66,13 @@ var random=function(bytes) {
 
 exports.encrypt = encrypt;
 exports.decrypt = decrypt;
-exports.hexToWordArray = hexToWordArray;
-exports.wordArrayToHex = wordArrayToHex;
 exports.random = random;
+
+/*For test
+var passcode = 'passcode';
+var obj = random(14);
+console.log(obj);
+var cipher = encrypt(obj, passcode);
+var plain = decrypt(cipher, passcode);
+console.log(plain);
+//*/
