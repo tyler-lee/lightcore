@@ -111,6 +111,8 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
 
   //TODO: key info need to be set first, we should set this in pad.init as part of pad structure.
   var masterKey = _pad.padPassword;
+  //pass padPassowrd to chat since we need to use it to encrypt chat messages.
+  chat.padPassowrd = _pad.padPassword;
   var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
   var ivStr=deriveIV + '' + randomString(4);	//of length 68
   var keyLength=128;
