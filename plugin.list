@@ -1,11 +1,19 @@
-ep_align ep_headings ep_print ep_subscript_and_superscript ep_font_color ep_font_family ep_font_size
+ep_align ep_headings ep_print ep_subscript_and_superscript ep_font_color ep_font_family ep_font_size ep_author_neat
 
+ep_align	对其方式支持
+ep_headings	标题
+ep_print	打印，可以打印成pdf
+ep_subscript_and_superscript	上下角标
+ep_font_color	字体颜色
+ep_font_family	字体
+ep_font_size	字体大小
+ep_author_neat	侧边显示作者名称，替代行号显示
 ep_rewrite_share_paths
-ep_export_cp_html_image
-ep_set_title_on_pad
-ep_line_height
-ep_cursortrace
-ep_tasklist
-ep_word_edit
+ep_export_cp_html_image	将当前文档内容以html方式显示
+ep_set_title_on_pad	设置文档标题，在文档最开始位置
+ep_line_height	设置行间距
+ep_cursortrace	追踪其他编辑者的光标
+ep_tasklist	增加任务列表的Checkbox支持
+ep_word_edit	Word风格的编辑方式
 
 ep_word_edit has some problems. Use ep_font_color ep_font_family ep_font_size instead.
