@@ -193,6 +193,7 @@ function sendClientReady(isReconnect, messageType)
    * we use userId as token, so that Etherpad can recognize who current user is.
    */
   var token = null;
+  var userName = null;
   var readonly = false;
   try
   {
@@ -202,6 +203,7 @@ function sendClientReady(isReconnect, messageType)
 	  alert('userName not match');
 	}
 	token = userInfo.userId;
+	userName = userInfo.userName;
 
 	//get readonly attribute if existing.
 	if(userInfo.readonly == true) {
@@ -225,6 +227,7 @@ function sendClientReady(isReconnect, messageType)
     "sessionID": sessionID,
     "password": password,
     "token": token,
+	"userName": userName,
     "readonly": readonly,
     "protocolVersion": 2
   };
@@ -664,9 +667,6 @@ var pad = {
     pad.collabClient.setOnServerMessage(pad.handleServerMessage);
     pad.collabClient.setOnChannelStateChange(pad.handleChannelStateChange);
     pad.collabClient.setOnInternalAction(pad.handleCollabAction);
-
-	//TODO: updateUserInfo to server so that all other users will know
-	pad.collabClient.updateUserInfo(pad.myUserInfo);
 
     // load initial chat-messages
     if(clientVars.chatHead != -1)

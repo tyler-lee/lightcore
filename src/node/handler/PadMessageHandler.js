@@ -1043,7 +1043,6 @@ function handleClientReady(client, message)
         padIds = value;
         callback();
       });
-		//TODO: check user access rights and set readonly flag accordingly.
     },
     //check permissions
     function(callback)
@@ -1070,6 +1069,24 @@ function handleClientReady(client, message)
         }
       });
     },
+	//check whether userName is set
+	function(callback)
+	{
+      authorManager.getAuthorName(author, function(err, _userName)
+      {
+        if(ERR(err, callback)) return;
+		if(!_userName) {
+			authorManager.setAuthorName(author, message.userName);
+		}
+		else {
+			if(_userName !== message.userName) {
+				console.log('tylerlee: getAuthorName userName not match', _userName, message.userName);
+				return;
+			}
+		}
+        callback();
+      });
+	},
     //get all authordata of this new user, and load the pad-object from the database
     function(callback)
     {

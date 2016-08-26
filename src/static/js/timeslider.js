@@ -32,7 +32,7 @@ var hooks = require('./pluginfw/hooks');
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
 var HmacSHA256= require('./crypto/hmac-sha256').HmacSHA256;
 
-var token, padId, export_links;
+var token, padId, export_links, userName;
 
 function init() {
   $(document).ready(function ()
@@ -70,6 +70,7 @@ function init() {
 			alert("UserId is required.");
 		}
 		token = userInfo.userId;
+		userName = userInfo.userName;
 
 		var masterKey = userInfo.padPassword;
 		var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
@@ -186,6 +187,7 @@ function sendSocketMsg(type, data)
               "data": data,
               "padId": padId,
               "token": token,
+			  "userName": userName,
               "sessionID": sessionID,
               "password": password,
               "protocolVersion": 2};
