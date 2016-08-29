@@ -69,6 +69,11 @@ function init() {
 		if(!userInfo.userId) {
 			alert("UserId is required.");
 		}
+		//TODO: check padId
+		if(userInfo.padId !== padId) {
+			alert('padId not match');
+			padId = '';
+		}
 		token = userInfo.userId;
 		userName = userInfo.userName;
 
