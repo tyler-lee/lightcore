@@ -78,6 +78,7 @@ exports.getPadId = function(readOnlyId, callback)
  * @param {String} padIdOrReadonlyPadId read only id or real pad id
  */
 exports.getIds = function(id, callback) {
+  //TODO: how about a pad name is starting with 'r.'.
   if (id.indexOf("r.") == 0)
     exports.getPadId(id, function (err, value) {
       if(ERR(err, callback)) return;

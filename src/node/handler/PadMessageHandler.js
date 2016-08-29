@@ -290,6 +290,7 @@ exports.handleMessage = function(client, message)
             }
           };
           //check if pad is requested via readOnly
+		  //TODO: how about a pad name is starting with 'r.'.
           if (auth.padID.indexOf("r.") === 0) {
             //Pad is readOnly, first get the real Pad ID
             readOnlyManager.getPadId(auth.padID, function(err, value) {
@@ -1087,6 +1088,21 @@ function handleClientReady(client, message)
         callback();
       });
 	},
+	//check whether pad exists.
+	function(callback)
+	{
+		padManager.doesPadExists(padIds.padId, function(err, exists)
+		{
+		if(ERR(err, callback)) return;
+
+		// TODO: if pad doesn't exist, which means a new pad will be created, so clear readonly flag.
+		if(!exists) {
+			console.log('tylerlee: pad (' + padIds.padId + ') does not exist. we will create one', sessioninfos[client.id]);
+			sessioninfos[client.id].readonly = false;
+		}
+		callback();
+		});
+	},
     //get all authordata of this new user, and load the pad-object from the database
     function(callback)
     {
@@ -1179,8 +1195,11 @@ function handleClientReady(client, message)
       //Save in sessioninfos that this session belonges to this pad
       sessioninfos[client.id].padId = padIds.padId;
       sessioninfos[client.id].readOnlyPadId = padIds.readOnlyPadId;
+	  //TODO: set padIds.readonly
       //sessioninfos[client.id].readonly = padIds.readonly;
-		//TODO: set padIds.readonly
+	  if(padIds.readonly) {
+		sessioninfos[client.id].readonly = padIds.readonly;
+	  }
       padIds.readonly = sessioninfos[client.id].readonly;
 
       //Log creation/(re-)entering of a pad
