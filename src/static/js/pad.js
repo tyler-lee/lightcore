@@ -202,6 +202,11 @@ function sendClientReady(isReconnect, messageType)
 	if(sessionStorage.__secbookUsername != userInfo.userName) {
 	  alert('userName not match');
 	}
+	//TODO: check padId
+	if(userInfo.padId !== padId) {
+	  alert('padId not match');
+	  padId = '';
+	}
 	token = userInfo.userId;
 	userName = userInfo.userName;
 
@@ -545,6 +550,7 @@ var pad = {
 				var userInfo = {
 					'userName': data.userName,
 					'userId': data.userId,
+					'padId': data.padId,
 					'padPassword': data.padPassword,
 					'readonly': data.readonly
 				};
