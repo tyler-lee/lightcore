@@ -526,45 +526,73 @@ var pad = {
 		//TODO: request from secbook: tell secbook to pass info, and wait for reply
 		var bUserInfoGet = false;
 
-		window.addEventListener(
-			'message',
-			function(event) {
-				//if message is not from parent, ignore
-				if(event.source != window.parent) return;
-				//if user info have get, ignore
-				if(bUserInfoGet) return;
+		//TODO: for test only
+		if(false) {
+			var userName = prompt('Enter username:', 'test');
+			sessionStorage.__secbookUsername = userName;
+			var readonly = prompt('Is readonly?', 'true');
+			readonly = readonly == 'true' ? true : false;
+			var userInfo = {
+				'userName': userName,
+				'userId': userName,
+				'padId': 'test',
+				'padPassword': 'padPassword',
+			};
 
-				var data = JSON.parse(event.data);
-				if(!data.isright) return;
-				if(!data.userName) return;
-				if(!data.userId) return;
-				if(!data.padId) return;
-				if(!data.padPassword) return;
-				//if(!data.encPassword) return;
+			//set readonly attribute if existing.
+			if(readonly === false) {
+				userInfo.readonly = false;
+			}
+			else {
+				//pad is readonly by default.
+				userInfo.readonly = true;
+			}
+			sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+			bUserInfoGet = true;
+		}
+		//test only end
 
-				sessionStorage.__secbookUsername = data.userName;
-				var userInfo = {
-					'userName': data.userName,
-					'userId': data.userId,
-					'padId': data.padId,
-					'padPassword': data.padPassword,
-				};
+		if(!bUserInfoGet) {
+			window.addEventListener(
+				'message',
+				function(event) {
+					//if message is not from parent, ignore
+					if(event.source != window.parent) return;
+					//if user info have get, ignore
+					if(bUserInfoGet) return;
 
-				//set readonly attribute if existing.
-				if(data.readonly == false) {
-					userInfo.readonly = false;
-				}
-				else {
-					//pad is readonly by default.
-					userInfo.readonly = true;
-				}
-				sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+					var data = JSON.parse(event.data);
+					if(!data.isright) return;
+					if(!data.userName) return;
+					if(!data.userId) return;
+					if(!data.padId) return;
+					if(!data.padPassword) return;
+					//if(!data.encPassword) return;
 
-				//all user info have get, set the flag
-				bUserInfoGet = true;
-			},
-			false
-		);
+					sessionStorage.__secbookUsername = data.userName;
+					var userInfo = {
+						'userName': data.userName,
+						'userId': data.userId,
+						'padId': data.padId,
+						'padPassword': data.padPassword,
+					};
+
+					//set readonly attribute if existing.
+					if(data.readonly === false) {
+						userInfo.readonly = false;
+					}
+					else {
+						//pad is readonly by default.
+						userInfo.readonly = true;
+					}
+					sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
+
+					//all user info have get, set the flag
+					bUserInfoGet = true;
+				},
+				false
+			);
+		}
 
 		//check whether user info have get: if not post message to parent.
 		if(!bUserInfoGet) {
