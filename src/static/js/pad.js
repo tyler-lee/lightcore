@@ -194,7 +194,7 @@ function sendClientReady(isReconnect, messageType)
    */
   var token = null;
   var userName = null;
-  var readonly = false;
+  var readonly = true;
   try
   {
 	var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
@@ -209,11 +209,7 @@ function sendClientReady(isReconnect, messageType)
 	}
 	token = userInfo.userId;
 	userName = userInfo.userName;
-
-	//get readonly attribute if existing.
-	if(userInfo.readonly == true) {
-		readonly = true;
-	}
+	readonly = userInfo.readonly;
   }
   catch (e)
   {
@@ -552,8 +548,16 @@ var pad = {
 					'userId': data.userId,
 					'padId': data.padId,
 					'padPassword': data.padPassword,
-					'readonly': data.readonly
 				};
+
+				//set readonly attribute if existing.
+				if(data.readonly == false) {
+					userInfo.readonly = false;
+				}
+				else {
+					//pad is readonly by default.
+					userInfo.readonly = true;
+				}
 				sessionStorage[sessionStorage.__secbookUsername] = JSON.stringify(userInfo);
 
 				//all user info have get, set the flag
