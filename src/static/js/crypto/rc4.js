@@ -33,44 +33,56 @@ a.keySize,a.ivSize);e.iv=d.iv;a=c.encrypt.call(this,a,b,d.key,e);a.mixIn(d);retu
 d){b[d]^=s.call(this)},keySize:8,ivSize:0});l.RC4=e._createHelper(p);n=n.RC4Drop=p.extend({cfg:p.cfg.extend({drop:192}),_doReset:function(){p._doReset.call(this);for(var b=this.cfg.drop;0<b;b--)s.call(this)}});l.RC4Drop=e._createHelper(n)})();
 
 
-exports.Init=function(key){
-	var rc4=CryptoJS.algo.RC4.createEncryptor(key);
+var createEncryptor = function(key, mode, iv) {
+	//for rc4, neither mode nor iv are required.
+	var rc4 = CryptoJS.algo.RC4.createEncryptor(key);
 	return rc4;
 }
-exports.KeyEmpty=function(rc4,round1){
-	var pHex={words:[0,0,0,0],sigBytes:16};
-	for(var j=0;j<round1;j++)
-		rc4.process(pHex);
+
+var generateKeyStream = function(rc4, bytes) {
+	//sigBytes is of length 16 by default.
+	var sigBytes = bytes || 16;
+	//sigBytes should be multiple length of 4
+	if(sigBytes & 0x3) {
+		console.log('Error: generate key stream length should be multiple of 4.', sigBytes);
+	}
+
+	var pHex = {
+		words: [0],
+		sigBytes: 4
+	};
+
+	var count = sigBytes >> 2;
+	var stream = rc4.process(pHex);
+	count--;
+	while(count-- > 0) {
+		stream = stream.concat(rc4.process(pHex));
+	}
+
+	return stream;
 }
-exports.KeyStream=function(rc4){
-	var pHex={words:[0,0,0,0],sigBytes:16};
-	var pc=rc4.process(pHex);
-	return pc;
-}
-exports.Finalize=function(rc4){
+
+var finalize = function(rc4) {
 	return rc4.finalize();
 }
 
-//TODO: rewrite following functions, and update any place that use them.
-exports.toHex=function(str){
-	var strHex=CryptoJS.enc.Hex.parse(str);
-	return strHex;
-}
-
-var hexToWordArray=function(hexStr) {
-	var wordArr=CryptoJS.enc.Hex.parse(hexStr);
+var hexToWordArray = function(hexStr) {
+	var wordArr = CryptoJS.enc.Hex.parse(hexStr);
 	return wordArr;
 }
 
-var wordArrayToHex=function(wordArr) {
+var wordArrayToHex = function(wordArr) {
 	var hex = CryptoJS.enc.Hex.stringify(wordArr);
 	return hex;
 }
 
-var random=function(bytes) {
+var random = function(bytes) {
 	return CryptoJS.lib.WordArray.random(bytes);
 }
 
+exports.createEncryptor = createEncryptor;
+exports.generateKeyStream = generateKeyStream;
+exports.finalize = finalize;
 exports.hexToWordArray = hexToWordArray;
 exports.wordArrayToHex = wordArrayToHex;
 exports.random = random;

@@ -25,10 +25,7 @@ var hooks = require('./pluginfw/hooks');
 var Changeset=require('./Changeset');
 
 //TODO: add by tyler lee
-//TODO: select crypto module
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
-var HmacSHA256= require('./crypto/hmac-sha256').HmacSHA256;
-//var etherpadCrypto=require('./crypto/EtherPadCryptoAES');
 var AttributePool = require("./AttributePool");
 var randomString = require('./pad_utils').randomString;
 //tyler lee add
@@ -113,13 +110,7 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
   var masterKey = _pad.padPassword;
   //pass padPassowrd to chat since we need to use it to encrypt chat messages.
   chat.padPassowrd = _pad.padPassword;
-  var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
-  var ivStr=deriveIV + '' + randomString(4);	//of length 68
-  var keyLength=128;
-  var streamMaxLen = 256;
-  var tempMax = "4";
-   streamMaxLen = streamMaxLen * parseInt(tempMax);
-  var changesetCrypto=new etherpadCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
+  var changesetCrypto=new etherpadCrypto(userId, masterKey);
 
   changesetCrypto.decryptAtext(serverVars.initialAttributedText, serverVars.apool);
 

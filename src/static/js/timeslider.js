@@ -30,7 +30,6 @@ var readCookie = require('./pad_utils').readCookie;
 var randomString = require('./pad_utils').randomString;
 var hooks = require('./pluginfw/hooks');
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
-var HmacSHA256= require('./crypto/hmac-sha256').HmacSHA256;
 
 var token, padId, export_links, userName;
 
@@ -78,13 +77,7 @@ function init() {
 		userName = userInfo.userName;
 
 		var masterKey = userInfo.padPassword;
-		var deriveIV = HmacSHA256('IV', masterKey).toString();	//of length 64
-		var ivStr=deriveIV + '' + randomString(4);	//of length 68
-		var keyLength=128;
-		var streamMaxLen = 256;
-		var tempMax = "4";
-		streamMaxLen = streamMaxLen * parseInt(tempMax);
-		changesetCrypto=new etherpadCrypto(userInfo.userId, masterKey, keyLength, streamMaxLen, ivStr);
+		changesetCrypto=new etherpadCrypto(userInfo.userId, masterKey);
 	}
 	catch (e)
 	{

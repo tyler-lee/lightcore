@@ -14,67 +14,55 @@
  * limitations under the License.
  */
 
-
 var Changeset = require('../Changeset');
-var AttributePool=require('../AttributePool');
-var Crypto=require('./StreamCrypto');
+var AttributePool = require('../AttributePool');
+var HmacSHA256 = require('./hmac-sha256').HmacSHA256;
+var Crypto = require('./StreamCrypto');
 var putCipherInfoAttribs = require('./CipherInfoAttributeManager').putCipherInfoAttribs;
 var getCipherInfoAttribs = require('./CipherInfoAttributeManager').getCipherInfoAttribs;
 
+var DocsCrypto = function(userId, masterkey) {
+	this.masterkey = masterkey;
+	this.userId = userId;
+	this.ivStr = HmacSHA256('IV', masterKey).toString(); //of length 64
+	this.keyBitLength = 128;
+	//the max key stream length: key stream length exceed this will lead to reset
+	this.streamMaxLength = 1024;
 
-var DocsCrypto=function(uid,masterkey,keyLen,streamMaxLength,ivStr){
-	this.encryptor=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
-	this.decryptList={};
-	this.masterkey=masterkey;
-	this.keyLen=keyLen;
-	this.userId=uid;
-	this.streamMaxLength = streamMaxLength;
-	this.ivStr=ivStr.substring(0,64);
+	this.encryptor = new Crypto(this.userId, this.masterkey, this.keyBitLength, this.streamMaxLength, this.ivStr);
+
+	this.decryptorList = {};
 }
 
 //TODO：udpate StreamCrypto module, removing isResetIV feature
-DocsCrypto.prototype.encryptCharBank=function(charBank, isResetIV)
-{
+DocsCrypto.prototype.encryptCharBank = function(charBank, isResetIV) {
 	return this.encryptor.encrypt(charBank, isResetIV);
 }
 
-DocsCrypto.prototype.AddDecryptor=function(uid,masterkey,keyLen,streamMaxLength,ivStr){
-	var newCrypto=new Crypto(uid,masterkey,keyLen,streamMaxLength,ivStr);
-	this.decryptList[uid]=newCrypto;
+DocsCrypto.prototype.AddDecryptor = function(userId, masterkey, keyBitLength, streamMaxLength, ivStr) {
+	var newCrypto = new Crypto(userId, masterkey, keyBitLength, streamMaxLength, ivStr);
+	this.decryptorList[userId] = newCrypto;
 	return newCrypto;
 };
 
-DocsCrypto.prototype.decryptCharBank=function(uid,charBank,ivStr,offset){
-	if(uid in this.decryptList){
-		return this.decryptList[uid].decrypt(charBank,ivStr,offset);
+DocsCrypto.prototype.decryptCharBank = function(userId, charBank, ivStr, offset) {
+	if (userId in this.decryptorList) {
+		return this.decryptorList[userId].decrypt(charBank, ivStr, offset);
 	}
-	else{
-		var newCrypto=this.AddDecryptor(uid,this.masterkey,this.keyLen,this.streamMaxLength,ivStr);
-		return newCrypto.decrypt(charBank,ivStr,offset);
+	else {
+		var newCrypto = this.AddDecryptor(userId, this.masterkey, this.keyBitLength, this.streamMaxLength, ivStr);
+		return newCrypto.decrypt(charBank, ivStr, offset);
 	}
 };
 
-DocsCrypto.prototype.getTotalKeystreamSize=function(){
-	var rt=0;
-	var ri=0;
-	var re;
-	for( var dcrypto in this.decryptList){
-		re=this.decryptList[dcrypto].getTotalSize();
-		rt+=re.totalKeySize;
-		ri+=re.initialTimes;
-	}
-	return ri+"times ---"+rt/1024;
-}
-
-DocsCrypto.prototype.encryptCS=function(unEncryptedChangeset,apool){
+DocsCrypto.prototype.encryptCS = function(unEncryptedChangeset, apool) {
 	var newCS = unEncryptedChangeset;
 	var cs = Changeset.unpack(newCS);
 
 	//if changeset's charBank is not NULL nor '\n', then we do encrypt and update key info attribute.
-	if(cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n')
-	{
+	if (cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n') {
 		var cipherObj = this.encryptCharBank(cs.charBank, false);
-		cs.charBank=cipherObj.ciphertext;
+		cs.charBank = cipherObj.ciphertext;
 
 		newCS = Changeset.pack(cs.oldLen, cs.newLen, cs.ops, cs.charBank);
 		Changeset.checkRep(newCS);
@@ -84,34 +72,32 @@ DocsCrypto.prototype.encryptCS=function(unEncryptedChangeset,apool){
 		cipherInfo.nonce = cipherObj.nonce;
 		cipherInfo.offset = cipherObj.offset;
 		newCS = putCipherInfoAttribs(newCS, apool, cipherInfo);
-   }
+	}
 
-   return newCS;
+	return newCS;
 }
 
-DocsCrypto.prototype.decryptCS=function(encryptedChangeset,apool){
-	var newCS=encryptedChangeset;
+DocsCrypto.prototype.decryptCS = function(encryptedChangeset, apool) {
+	var newCS = encryptedChangeset;
 	var cs = Changeset.unpack(newCS);
 
-	//console.log(apool, encryptedChangeset)
 	//if changeset's charBank is not NULL nor '\n', then we do encrypt and update key info attribute.
-	if(cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n') {
-		var iterator = Changeset.opIterator(cs.ops)
-			,op;
+	if (cs.charBank.length > 0 && cs.charBank != '' && cs.charBank != '\n') {
+		var iterator = Changeset.opIterator(cs.ops),
+		op;
 		var plaintext = '';
 		var count = 0;
 
-		while(iterator.hasNext()) {
+		while (iterator.hasNext()) {
 			op = iterator.next();
 
 			//only inserted chars will appear in charBank
-			if(op.opcode == '+') {
+			if (op.opcode == '+') {
 				//process the given char from charBank
 				var ch = cs.charBank.substring(count, count + op.chars);
 				//note that, each insert operation only process one char
-				if(ch != '\n') {
+				if (ch != '\n') {
 					var cipherInfo = getCipherInfoAttribs(apool, op.attribs);
-					//console.log(ch, count, cipherInfo.authorId, cipherInfo.nonce, cipherInfo.offset);
 					var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
 					ch = plainObj.plaintext;
 				}
@@ -129,12 +115,12 @@ DocsCrypto.prototype.decryptCS=function(encryptedChangeset,apool){
 }
 
 DocsCrypto.prototype.decryptAtext = function(atext, apool) {
-	var iterator = Changeset.opIterator(atext.attribs)
-	, text = atext.text
-	, op;
+	var iterator = Changeset.opIterator(atext.attribs),
+	text = atext.text,
+	op;
 
 	//make sure apool is an instance of AttributePool.
-	if(!(apool instanceof AttributePool)) {
+	if (! (apool instanceof AttributePool)) {
 		var tempApool = new AttributePool();
 		tempApool.fromJsonable(apool);
 		apool = tempApool;
@@ -143,15 +129,15 @@ DocsCrypto.prototype.decryptAtext = function(atext, apool) {
 	var plaintext = '';
 	var count = 0;
 
-	while(iterator.hasNext()) {
+	while (iterator.hasNext()) {
 		op = iterator.next();
 
 		//only inserted chars will appear in charBank
-		if(op.opcode == '+') {
+		if (op.opcode == '+') {
 			//process the given char from charBank
 			var ch = text.substring(count, count + op.chars);
 			//note that, each insert operation only process one char
-			if(ch != '\n') {
+			if (ch != '\n') {
 				var cipherInfo = getCipherInfoAttribs(apool, op.attribs);
 				var plainObj = this.decryptCharBank(cipherInfo.authorId, ch, this.ivStr + cipherInfo.nonce, cipherInfo.offset);
 				ch = plainObj.plaintext;
@@ -182,12 +168,7 @@ function randomString(length)
 
 var masterKey="hello123kitty";
 var userId = 'tyler lee';
-var ivStr=randomString(68);
-var keyLength=128;
-var streamMaxLen = 256;
-var tempMax = "4";
-streamMaxLen = streamMaxLen * parseInt(tempMax);
-var changesetCrypto=new DocsCrypto(userId, masterKey, keyLength, streamMaxLen, ivStr);
+var changesetCrypto=new DocsCrypto(userId, masterKey);
 
 var changeset = 'Z:z>b|2=m=b*0|1+b$123\n4567890';
 var apool = new AttributePool();
@@ -207,7 +188,7 @@ if((decryptedChangeset.split('$'))[1] === (changeset.split('$'))[1]) {
 }
 else {
 	console.log("Encrypt and decrypt changeset fail\n")
-	console.log(changeset);
+	console.log(changeset, encryptedChangeset);
 	console.log(decryptedChangeset);
 }
 

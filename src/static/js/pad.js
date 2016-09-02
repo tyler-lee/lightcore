@@ -528,6 +528,8 @@ var pad = {
 
 		//TODO: for test only
 		if(false) {
+			alert('You are in test mode');
+
 			var userName = prompt('Enter username:', 'test');
 			sessionStorage.__secbookUsername = userName;
 			var readonly = prompt('Is readonly?', 'true');
