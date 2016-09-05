@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-//var streamCryptoJS=require('./rabbit');
-var streamCryptoJS = require('./rc4');
+var streamCryptoJS=require('./rabbit');
+//var streamCryptoJS = require('./rc4');
 var sha256JS = require('./hmac-sha256');
 
 /*
