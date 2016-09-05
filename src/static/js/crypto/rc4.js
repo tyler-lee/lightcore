@@ -33,8 +33,15 @@ a.keySize,a.ivSize);e.iv=d.iv;a=c.encrypt.call(this,a,b,d.key,e);a.mixIn(d);retu
 d){b[d]^=s.call(this)},keySize:8,ivSize:0});l.RC4=e._createHelper(p);n=n.RC4Drop=p.extend({cfg:p.cfg.extend({drop:192}),_doReset:function(){p._doReset.call(this);for(var b=this.cfg.drop;0<b;b--)s.call(this)}});l.RC4Drop=e._createHelper(n)})();
 
 
-var createEncryptor = function(key, mode, iv) {
-	//for rc4, neither mode nor iv are required.
+var createEncryptor = function(keyWordArrry, addInfo) {
+	var key = {words:[], sigBytes: keyWordArrry.sigBytes};
+	// addInfo is an object, may include mode and iv fields.
+	// The length of iv is less than that of key.
+	if (addInfo.iv) {
+		for (var i = 0; i < keyWordArrry.words.length; i++) {
+			key.words[i] = keyWordArrry.words[i] ^ addInfo.iv.words[i % addInfo.iv.words.length];
+		}
+	}
 	var rc4 = CryptoJS.algo.RC4.createEncryptor(key);
 	return rc4;
 }
@@ -43,7 +50,7 @@ var generateKeyStream = function(rc4, bytes) {
 	//sigBytes is of length 16 by default.
 	var sigBytes = bytes || 16;
 	//sigBytes should be multiple length of 4
-	if(sigBytes & 0x3) {
+	if (sigBytes & 0x3) {
 		console.log('Error: generate key stream length should be multiple of 4.', sigBytes);
 	}
 
@@ -55,7 +62,7 @@ var generateKeyStream = function(rc4, bytes) {
 	var count = sigBytes >> 2;
 	var stream = rc4.process(pHex);
 	count--;
-	while(count-- > 0) {
+	while (count-- > 0) {
 		stream = stream.concat(rc4.process(pHex));
 	}
 
