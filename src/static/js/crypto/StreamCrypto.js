@@ -133,7 +133,6 @@ StreamCrypto.prototype.selectCryptor = function(nonce) {
 			stream: [],
 			cursor: 0
 		};
-
 	}
 
 	this.nonce = nonce;
@@ -201,7 +200,7 @@ var generateStreamUpToLength = function(cryptorObj, upToLength) {
 
 	if (requiredStreamSize > 0) {
 		//每次调用KeyStream产生的密钥流长度
-		requiredStreamSize = ((requiredStreamSize >> 2) + 1) << 2;
+		requiredStreamSize = ((requiredStreamSize >> 4) + 1) << 4;
 		var stream = streamCryptoJS.generateKeyStream(cryptorObj.cryptor, requiredStreamSize);
 		var textword = stream.words;
 		var word = 0;
