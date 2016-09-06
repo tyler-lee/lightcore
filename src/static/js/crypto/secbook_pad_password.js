@@ -17,19 +17,21 @@
 var AES = require('./aes');
 var HmacSHA256 = require('./hmac-sha256');
 
-
 var computeHmac = function(message, passcode) {
 	return HmacSHA256.HmacSHA256(message, passcode);
 }
 
 var isValidHmac = function(message, passcode, hmac) {
+	if (typeof passcode !== 'string') {
+		passcode = AES.random(0).concat(passcode);
+	}
 	var tempHmac = computeHmac(message, passcode);
 
-	if(hmac.sigBytes != tempHmac.sigBytes) {
+	if (hmac.sigBytes != tempHmac.sigBytes) {
 		return false;
 	}
-	for(var index in hmac.words) {
-		if(tempHmac.words[index] != hmac.words[index]) {
+	for (var index in hmac.words) {
+		if (tempHmac.words[index] != hmac.words[index]) {
 			return false;
 		}
 	}
@@ -64,7 +66,6 @@ var encryptPadPassword = function(encPassword, plainPadPassword) {
 	return cipherPadPassword;
 }
 
-
 /**
 Input:
 	encPassword: 		strings
@@ -80,7 +81,7 @@ var decryptPadPassword = function(encPassword, cipherPadPassword) {
 
 	//check hmac
 	var mac = cipherPadPassword.mac;
-	if(!isValidHmac(mac.nonce, plainPadPassword, mac.hmac)) {
+	if (!isValidHmac(mac.nonce, plainPadPassword, mac.hmac)) {
 		return null;
 	}
 
@@ -94,12 +95,17 @@ exports.isValidHmac = isValidHmac;
 
 //*
 var encPassword = 'encPassword';
-//var plain = 'strPlain';
-var plain = AES.random(8);
+var plain = 'strPlain';
 console.log(plain);
 var cipher = encryptPadPassword(encPassword, plain);
-console.log(cipher);
-
+//console.log(cipher);
 var decrypted = decryptPadPassword(encPassword, cipher);
+console.log(decrypted, '\n');
+
+plain = AES.random(8);
+console.log(plain);
+cipher = encryptPadPassword(encPassword, plain);
+decrypted = decryptPadPassword(encPassword, cipher);
 console.log(decrypted);
 // */
+

@@ -202,7 +202,7 @@ function sendClientReady(isReconnect, messageType)
 	if(sessionStorage.__secbookUsername != userInfo.userName) {
 	  alert('userName not match');
 	}
-	//TODO: check padId
+	//check padId
 	if(userInfo.padId !== padId) {
 	  alert('padId not match');
 	  padId = '';
@@ -523,7 +523,7 @@ var pad = {
 		if(!window.sessionStorage) {
 			alert("window.sessionStorage feature is required.");
 		}
-		//TODO: request from secbook: tell secbook to pass info, and wait for reply
+		//Request from secbook: tell secbook to pass info, and wait for reply
 		var bUserInfoGet = false;
 
 		//TODO: for test only
@@ -653,7 +653,7 @@ var pad = {
       {}
     }
 
-	//TODO: get userName and padPassword from sessionStorage
+	//Get userName and padPassword from sessionStorage
 	//MUST be prior to getCollabClient
 	try {
 		var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
