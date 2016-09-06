@@ -47,26 +47,28 @@ var createEncryptor = function(keyWordArrry, addInfo) {
 }
 
 var generateKeyStream = function(rabbit, bytes) {
-	//sigBytes is of length 16 by default.
-	var sigBytes = bytes || 16;
-	//sigBytes should be multiple length of 16
-	if (sigBytes & 0xf) {
-		console.log('Error: generate key stream length should be multiple of 16.', sigBytes);
+	//rabbit.blockSize is in words length. each word has 4 bytes.
+	var blockSizeInBytes = rabbit.blockSize << 2;
+	//sigBytes is of length blockSize by default.
+	var sigBytes = bytes || blockSizeInBytes;
+	//sigBytes should be multiple length of blockSize
+	if (sigBytes & (blockSizeInBytes - 1)) {
+		console.log('Error: generate key stream length should be multiple of blockSize.', sigBytes);
 	}
 
 	var pHex = {
-		words: [0, 0, 0, 0],
-		sigBytes: 16
+		words: [],
+		sigBytes: 0
 	};
 
-	var count = sigBytes >> 4;
-	var stream = rabbit.process(pHex);
-	count--;
+	var count = sigBytes >> 2;
 	while (count-- > 0) {
-		stream = stream.concat(rabbit.process(pHex));
+		pHex.words.push(0);
+		pHex.sigBytes += 4;
 	}
+	console.log('rabbit: ', blockSizeInBytes, bytes, pHex);
 
-	return stream;
+	return rabbit.process(pHex);
 }
 
 var finalize = function(rabbit) {

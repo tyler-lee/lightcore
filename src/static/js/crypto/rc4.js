@@ -47,26 +47,27 @@ var createEncryptor = function(keyWordArrry, addInfo) {
 }
 
 var generateKeyStream = function(rc4, bytes) {
-	//sigBytes is of length 16 by default.
-	var sigBytes = bytes || 16;
-	//sigBytes should be multiple length of 4
-	if (sigBytes & 0x3) {
-		console.log('Error: generate key stream length should be multiple of 4.', sigBytes);
+	//rabbit.blockSize is in words length. each word has 4 bytes.
+	var blockSizeInBytes = rc4.blockSize << 2;
+	//sigBytes is of length blockSize by default.
+	var sigBytes = bytes || blockSizeInBytes;
+	//sigBytes should be multiple length of blockSize
+	if (sigBytes & (blockSizeInBytes - 1)) {
+		console.log('Error: generate key stream length should be multiple of blockSize.', sigBytes);
 	}
 
 	var pHex = {
-		words: [0],
-		sigBytes: 4
+		words: [],
+		sigBytes: 0
 	};
 
 	var count = sigBytes >> 2;
-	var stream = rc4.process(pHex);
-	count--;
 	while (count-- > 0) {
-		stream = stream.concat(rc4.process(pHex));
+		pHex.words.push(0);
+		pHex.sigBytes += 4;
 	}
 
-	return stream;
+	return rc4.process(pHex);
 }
 
 var finalize = function(rc4) {
