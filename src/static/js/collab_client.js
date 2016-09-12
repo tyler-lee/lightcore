@@ -27,7 +27,6 @@ var Changeset=require('./Changeset');
 //TODO: add by tyler lee
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
 var AttributePool = require("./AttributePool");
-var randomString = require('./pad_utils').randomString;
 //tyler lee add
 
 // Dependency fill on init. This exists for `pad.socket` only.
@@ -393,6 +392,13 @@ function getCollabClient(ace2editor, serverVars, initialUserInfo, options, _pad)
         callbacks.onUserJoin(userInfo);
       }
       tellAceActiveAuthorInfo(userInfo);
+
+	  var haData = clientVars.collab_client_vars.historicalAuthorData;
+      if (!haData[id]) {
+		  haData[id] = {};
+	  }
+	  haData[id].colorId = userInfo.colorId;
+	  haData[id].name = userInfo.name;
     }
     else if (msg.type == "USER_LEAVE")
     {

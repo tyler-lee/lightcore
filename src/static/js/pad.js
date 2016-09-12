@@ -207,6 +207,7 @@ function sendClientReady(isReconnect, messageType)
 	  alert('padId not match');
 	  padId = '';
 	}
+	//TODO: check padPassword
 	token = userInfo.userId;
 	userName = userInfo.userName;
 	readonly = userInfo.readonly;
@@ -532,7 +533,7 @@ var pad = {
 
 			var userName = prompt('Enter username:', 'test');
 			sessionStorage.__secbookUsername = userName;
-			var readonly = prompt('Is readonly?', 'true');
+			var readonly = prompt('Is readonly?', 'false');
 			readonly = readonly == 'true' ? true : false;
 			var userInfo = {
 				'userName': userName,
@@ -707,6 +708,9 @@ var pad = {
     pad.collabClient.setOnServerMessage(pad.handleServerMessage);
     pad.collabClient.setOnChannelStateChange(pad.handleChannelStateChange);
     pad.collabClient.setOnInternalAction(pad.handleCollabAction);
+
+	//update userInfo, fix issue that unknown authorname on the left of pad: SHOULD be AFTER getCollabClient.
+	pad.notifyChangeName(pad.myUserInfo.name);
 
     // load initial chat-messages
     if(clientVars.chatHead != -1)

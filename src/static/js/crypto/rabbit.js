@@ -66,7 +66,6 @@ var generateKeyStream = function(rabbit, bytes) {
 		pHex.words.push(0);
 		pHex.sigBytes += 4;
 	}
-	console.log('rabbit: ', blockSizeInBytes, bytes, pHex);
 
 	return rabbit.process(pHex);
 }
