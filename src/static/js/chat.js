@@ -29,6 +29,9 @@ var chat = (function()
   var gotInitialMessages = false;
   var historyPointer = 0;
   var chatMentions = 0;
+  var chatboxX = 0;
+  var chatboxY = 0;
+  var $chatbox = $("#chatbox");
   var self = {
     show: function ()
     {
@@ -84,6 +87,58 @@ var chat = (function()
         $('#users').removeClass("chatAndUsers");
         $("#chatbox").removeClass("chatAndUsersChat");
       }
+    },
+	mousemove: function()
+    {
+      var flag = true;
+      console.log(event.clientX+"\n"+event.clientY);
+      if(event.clientX>50 && event.clientX<$(window).width()-50) {
+        $chatbox.css("left", event.clientX - chatboxX);
+      }
+      else if(event.clientX<=50){
+        flag = false;
+        $chatbox.css("left", 0);
+        $chatbox.addClass("left").removeClass("center right bottom top");
+      } else if(event.clientX>=$(window).width()-50){
+        flag = false;
+        $chatbox.css("right", 0).css("left","auto");
+        $chatbox.addClass("right").removeClass("center left bottom top");
+      }
+      if(event.clientY>50 && event.clientY<$(window).height()-50){
+        $chatbox.css("top", event.clientY-chatboxY);
+      }
+      else if(event.clientY<=50){
+        flag = false;
+        $chatbox.css("top", 0);
+        $chatbox.addClass("top").removeClass("center right bottom left");
+      }else if(event.clientY>=$(window).height()-50){
+        flag = false;
+        $chatbox.css("bottom", 0).css("top","auto");
+        $chatbox.addClass("bottom").removeClass("center right top left");
+      }
+      if(flag){
+        $chatbox.addClass("center").removeClass("bottom right top left");
+      }
+    },
+    removeEvent: function()
+    {
+      $("body").unbind("mousemove").unbind("mouseup");
+      //document.body.detachEvent("onmousemove",mousemove);
+      //document.body.detachEvent("onmouseup",removeEvent)
+    },
+    beginDrag: function()
+    {
+      var thischat = this;
+      chatboxX = event.clientX -$chatbox.offset().left;
+      chatboxY = event.clientY - $chatbox.offset().top;
+      $("body").mousemove(function(event){
+        thischat.mousemove();
+      });
+      $("body").mouseup(function(event){
+        thischat.removeEvent(event);
+      });
+      //document.body.attachEvent("onmousemove",mousemove);
+      //document.body.attachEvent("onmouseup",removeEvent);
     },
     hide: function ()
     {

@@ -549,14 +549,45 @@ table#otheruserstable {
   height: 200px;
   z-index: 400;
   background-color: #f7f7f7;
+  padding: 3px;
+  padding-bottom: 10px;
+  display: none;
+}
+#chatbox.left{
+  left: 0px;
+  border-bottom-right-radius: 5px;
+  border-top-right-radius: 5px;
+  border-top: 1px solid #999;
+  border-right: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+#chatbox.right{
+  right: 0px;
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+  border-left: 1px solid #999;
+  border-top: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+#chatbox.top{
+  top: 0px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-left: 1px solid #999;
+  border-right: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+#chatbox.bottom{
+  bottom: 0px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
   border-left: 1px solid #999;
   border-right: 1px solid #999;
   border-top: 1px solid #999;
-  padding: 3px;
-  padding-bottom: 10px;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  display: none;
+}
+#chatbox.center{
+  border-radius: 5px;
+  border: 1px solid #999;
 }
 #chattext {
   background-color: white;
@@ -947,8 +978,8 @@ input[type=checkbox] {
   right:0px !important;
   border-radius:0px !important;
   width:182px !important;
-/* Below makes UI look weird when X makes editbar flow onto two lines */
-/*  margin:2px 0 0 0 !important;*/
+  /* Below makes UI look weird when X makes editbar flow onto two lines */
+  /*  margin:2px 0 0 0 !important;*/
   border: none !important;
   border-bottom: 1px solid #ccc !important;
   height:155px !important;
@@ -1045,110 +1076,110 @@ input[type=checkbox] {
 
 /* Mobile devices */
 @media only screen and (min-device-width: 320px) and (max-device-width: 720px) {
-    #users {
-      top: auto;
-      right:0px !important;
-      bottom: 33px;
-      border-radius: 0px !important;
-      height: 55px !important;
-      overflow: auto;
-    }
-    #mycolorpicker {
-      left: -73px;
-      top:auto !important;
-      bottom:33px !important;
-      /* #mycolorpicker: width -#users: width */;
-    }
-    #editorcontainer {
-      margin-bottom: 33px
-    }
-    /* cancel non-mobile border (will be defined on ".toolbar ul.menu_left" bellow) */
-    .toolbar {
-      border-bottom: 0;
-    }
-    .toolbar ul {
-      background: #f7f7f7;
-      background: -webkit-linear-gradient(#f7f7f7, #f1f1f1 80%);
-      background: -moz-linear-gradient(#f7f7f7, #f1f1f1 80%);
-      background: -o-linear-gradient(#f7f7f7, #f1f1f1 80%);
-      background: -ms-linear-gradient(#f7f7f7, #f1f1f1 80%);
-      background: linear-gradient(#f7f7f7, #f1f1f1 80%);
-      width: 100%;
-      overflow: hidden;
-    }
-    .toolbar ul.menu_left {
-      right:0px;
-      position: fixed;
-      top: 0;
-      padding-top: 4px;
-      border-bottom: 1px solid #ccc;
-      z-index: 10;
-    }
-    .toolbar ul.menu_right {
-      right:0px !important;
-      height: 32px;
-      position: fixed;
-      bottom: 0;
-      border-top: 1px solid #ccc;
-    }
-    .toolbar ul.menu_right > li:last-child {
-      float: right;
-    }
-    .toolbar ul.menu_right > li a {
-      border-radius: 0;
-      border: none;
-      background: none;
-      margin: 0;
-      padding: 8px;
-    }
-    .toolbar ul li a.selected {
-      background: none !important
-    }
-    li[data-key="showusers"] > a {
+  #users {
+    top: auto;
+    right:0px !important;
+    bottom: 33px;
+    border-radius: 0px !important;
+    height: 55px !important;
+    overflow: auto;
+  }
+  #mycolorpicker {
+    left: -73px;
+    top:auto !important;
+    bottom:33px !important;
+    /* #mycolorpicker: width -#users: width */;
+  }
+  #editorcontainer {
+    margin-bottom: 33px
+  }
+  /* cancel non-mobile border (will be defined on ".toolbar ul.menu_left" bellow) */
+  .toolbar {
+    border-bottom: 0;
+  }
+  .toolbar ul {
+    background: #f7f7f7;
+    background: -webkit-linear-gradient(#f7f7f7, #f1f1f1 80%);
+    background: -moz-linear-gradient(#f7f7f7, #f1f1f1 80%);
+    background: -o-linear-gradient(#f7f7f7, #f1f1f1 80%);
+    background: -ms-linear-gradient(#f7f7f7, #f1f1f1 80%);
+    background: linear-gradient(#f7f7f7, #f1f1f1 80%);
+    width: 100%;
+    overflow: hidden;
+  }
+  .toolbar ul.menu_left {
+    right:0px;
+    position: fixed;
+    top: 0;
+    padding-top: 4px;
+    border-bottom: 1px solid #ccc;
+    z-index: 10;
+  }
+  .toolbar ul.menu_right {
+    right:0px !important;
+    height: 32px;
+    position: fixed;
+    bottom: 0;
+    border-top: 1px solid #ccc;
+  }
+  .toolbar ul.menu_right > li:last-child {
+    float: right;
+  }
+  .toolbar ul.menu_right > li a {
+    border-radius: 0;
+    border: none;
+    background: none;
+    margin: 0;
+    padding: 8px;
+  }
+  .toolbar ul li a.selected {
+    background: none !important
+  }
+  li[data-key="showusers"] > a {
 
-      margin-top:-10px;
-      padding-top:2px !important;
-      line-height:20px;
-      vertical-align:top !important;
-    }
-    #chaticon {
-      position:fixed;
-      right:48px;
-    }
-    .popup {
-      -webkit-border-radius: 0;
-      -moz-border-radius: 0;
-      border-radius: 0;
-      -webkit-box-sizing: border-box;
-      -moz-box-sizing: border-box;
-      -ms-box-sizing: border-box;
-      box-sizing: border-box;
-      width: 100%;
-    }
-    #settings,
-    #import_export,
-    #connectivity,
-    #embed {
-      top:auto;
-      left: 0;
-      bottom: 33px;
-      right: 0;
-    }
-    .toolbar ul li .separator {
-      display: none
-    }
-    #online_count {
-      line-height: 24px
-    }
-    #chatbox{
-      position:fixed;
-      bottom:33px !important;
-      margin: 65px 0 0 0;
-    }
-    #gritter-notice-wrapper{
-      bottom:43px !important;
-      right:10px !important;
-    }
+    margin-top:-10px;
+    padding-top:2px !important;
+    line-height:20px;
+    vertical-align:top !important;
+  }
+  #chaticon {
+    position:fixed;
+    right:48px;
+  }
+  .popup {
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  #settings,
+  #import_export,
+  #connectivity,
+  #embed {
+    top:auto;
+    left: 0;
+    bottom: 33px;
+    right: 0;
+  }
+  .toolbar ul li .separator {
+    display: none
+  }
+  #online_count {
+    line-height: 24px
+  }
+  #chatbox{
+    position:fixed;
+    bottom:33px !important;
+    margin: 65px 0 0 0;
+  }
+  #gritter-notice-wrapper{
+    bottom:43px !important;
+    right:10px !important;
+  }
 }
 
 #passwordRequired{
@@ -1264,9 +1295,9 @@ input[type=checkbox] {
   font-family: "fontawesome-etherpad";
   src:url("../../static/font/fontawesome-etherpad.eot");
   src:url("../../static/font/fontawesome-etherpad.eot?#iefix") format("embedded-opentype"),
-    url("../../static/font/fontawesome-etherpad.woff") format("woff"),
-    url("../../static/font/fontawesome-etherpad.ttf") format("truetype"),
-    url("../../static/font/fontawesome-etherpad.svg#fontawesome-etherpad") format("svg");
+  url("../../static/font/fontawesome-etherpad.woff") format("woff"),
+  url("../../static/font/fontawesome-etherpad.ttf") format("truetype"),
+  url("../../static/font/fontawesome-etherpad.svg#fontawesome-etherpad") format("svg");
   font-weight: normal;
   font-style: normal;
 
