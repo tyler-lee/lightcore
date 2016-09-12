@@ -201,6 +201,7 @@ function sendClientReady(isReconnect, messageType)
 	//check userName ...
 	if(sessionStorage.__secbookUsername != userInfo.userName) {
 	  alert('userName not match');
+	  padId = '';
 	}
 	//check padId
 	if(userInfo.padId !== padId) {
@@ -208,6 +209,10 @@ function sendClientReady(isReconnect, messageType)
 	  padId = '';
 	}
 	//TODO: check padPassword
+	if(!userInfo.padPassword) {
+	  alert('padPassword not match');
+	  padId = '';
+	}
 	token = userInfo.userId;
 	userName = userInfo.userName;
 	readonly = userInfo.readonly;
@@ -217,6 +222,7 @@ function sendClientReady(isReconnect, messageType)
 	alert('token is null.\nGet userId fail');
 	token = "t." + randomString();
 	createCookie("token", token, 60);
+	padId = '';
   }
 
   var sessionID = decodeURIComponent(readCookie("sessionID"));
