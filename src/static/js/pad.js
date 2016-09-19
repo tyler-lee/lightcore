@@ -605,7 +605,7 @@ var pad = {
 
 		//check whether user info have get: if not post message to parent.
 		if(!bUserInfoGet) {
-			window.parent.postMessage('READY', 'http://secbook.rtisec.com');
+			window.parent.postMessage('READY', 'http://www.secbook.space');
 		}
 		//while(!bUserInfoGet) {
 		//	setTimeout(function(){
