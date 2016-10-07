@@ -15,7 +15,42 @@
  */
 
 var AES = require('./aes');
+var JSEncrypt = require('./JSEncrypt');
 var HmacSHA256 = require('./hmac-sha256');
+
+//generate new key pair: set default_key_size as parameter
+var generateKeyPair = function(default_key_size) {
+	var keyObj = {};
+
+	if(default_key_size == undefined || default_key_size < 2048) {
+		default_key_size = 2048;
+	}
+
+	var rsa = new JSEncrypt();
+	rsa.default_key_size = default_key_size;
+	keyObj.publicKey = rsa.getPublicKey();
+	keyObj.privateKey = rsa.getPrivateKey();
+
+	return keyObj;
+}
+
+//encrypt with public key
+var encryptWithPublicKey = function(publicKey, message) {
+	var encrypt = new JSEncrypt();
+	encrypt.setPublicKey(publicKey);
+	var encrypted = encrypt.encrypt(JSON.stringify(message));
+
+	return encrypted;
+}
+
+//decrypt with private key
+var decryptWithPrivateKey = function(privateKey, encryptedMessage) {
+	var decrypt = new JSEncrypt();
+	decrypt.setPrivateKey(privateKey);
+	var decrypted = decrypt.decrypt(encryptedMessage);
+
+	return JSON.parse(decrypted);
+}
 
 var computeHmac = function(message, passcode) {
 	return HmacSHA256.HmacSHA256(message, passcode);
@@ -90,10 +125,15 @@ var decryptPadPassword = function(encPassword, cipherPadPassword) {
 
 exports.encryptPadPassword = encryptPadPassword;
 exports.decryptPadPassword = decryptPadPassword;
+
 exports.computeHmac = computeHmac;
 exports.isValidHmac = isValidHmac;
 
-//*
+exports.generateKeyPair = generateKeyPair;
+exports.encryptWithPublicKey = encryptWithPublicKey;
+exports.decryptWithPrivateKey = decryptWithPrivateKey;
+
+/*
 var encPassword = 'encPassword';
 var plain = 'strPlain';
 console.log(plain);
