@@ -16,8 +16,8 @@
 
   //IP and port which etherpad should bind at
   "ip": "0.0.0.0",
-  //"port" : 80,
-  "port" : 9002,
+  "port" : 3389,
+  //"port" : 9002,
 
   /*
   // Node native SSL support
@@ -48,9 +48,10 @@
   */
    "dbType" : "mysql",
    "dbSettings" : {
-                    "user"    : "lightcore",
-                    "host"    : "localhost",
-                    "password": "lightcore",
+                    "user"    : "secbook",
+                    "password": "secbook2016",
+                    "host"    : "secbookdb.c2bwqf0wqs96.rds.cn-north-1.amazonaws.com.cn",
+		    "port"    : 3306,
                     "database": "lightcoreDB",
                     "charset" : "utf8mb4"
                   },
