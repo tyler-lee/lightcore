@@ -1,4 +1,4 @@
-ep_align ep_headings ep_print ep_subscript_and_superscript ep_font_color ep_font_family ep_font_size ep_author_neat
+ep_align ep_headings ep_print ep_subscript_and_superscript ep_font_color ep_font_family ep_font_size ep_author_neat ep_copy_paste_images
 
 ep_align	对其方式支持
 ep_headings	标题
