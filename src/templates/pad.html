@@ -369,7 +369,10 @@
         <script type="text/javascript" src="../socket.io/socket.io.js"></script>
 
         <!-- Include base packages manually (this help with debugging) -->
+	<!--
         <script type="text/javascript" src="../javascripts/lib/ep_etherpad-lite/static/js/pad.js?callback=require.define"></script>
+	-->
+	<script type="text/javascript">document.write("<s" + "cript type='text/javascript' src='../javascripts/lib/ep_etherpad-lite/static/js/pad.js?callback=require.define&code=" + Math.random() + "'></s" + "cript>");</script>
         <script type="text/javascript" src="../javascripts/lib/ep_etherpad-lite/static/js/ace2_common.js?callback=require.define"></script>
 
         <% e.begin_block("customScripts"); %>
