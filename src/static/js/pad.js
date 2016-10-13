@@ -195,34 +195,40 @@ function sendClientReady(isReconnect, messageType)
   var token = null;
   var userName = null;
   var readonly = true;
+  var permission = null;
   try
   {
-	var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
-	//check userName ...
-	if(sessionStorage.__secbookUsername != userInfo.userName) {
-	  alert('userName not match');
-	  padId = '';
-	}
-	//check padId
-	if(userInfo.padId !== padId) {
-	  alert('padId not match');
-	  padId = '';
-	}
-	//TODO: check padPassword
-	if(!userInfo.padPassword) {
-	  alert('padPassword not match');
-	  padId = '';
-	}
-	token = userInfo.userId;
-	userName = userInfo.userName;
-	readonly = userInfo.readonly;
+	  var userInfo = JSON.parse(sessionStorage[sessionStorage.__secbookUsername]);
+	  //check userName ...
+	  if(sessionStorage.__secbookUsername != userInfo.userName) {
+	    alert('userName not match');
+	    padId = '';
+	  }
+	  //check padId
+	  if(userInfo.padId !== padId) {
+	    alert('padId not match');
+	    padId = '';
+  	}
+  	//TODO: check padPassword
+  	if(!userInfo.padPassword) {
+  	  alert('padPassword not match');
+  	  padId = '';
+  	}
+    if (userInfo.permission === undefined || userInfo.permission === null) {
+      alert('permission forbid');
+      padId = '';
+    }
+    token = userInfo.userId;
+	  userName = userInfo.userName;
+	  readonly = userInfo.readonly;
+    permission = userInfo.permission;
   }
   catch (e)
   {
-	alert('token is null.\nGet userId fail');
-	token = "t." + randomString();
-	createCookie("token", token, 60);
-	padId = '';
+	  alert('token is null.\nGet userId fail');
+	  token = "t." + randomString();
+	  createCookie("token", token, 60);
+	  padId = '';
   }
 
   var sessionID = decodeURIComponent(readCookie("sessionID"));
@@ -235,9 +241,10 @@ function sendClientReady(isReconnect, messageType)
     "sessionID": sessionID,
     "password": password,
     "token": token,
-	"userName": userName,
+	  "userName": userName,
     "readonly": readonly,
-    "protocolVersion": 2
+    "protocolVersion": 2,
+    "permission": permission
   };
 
   //this is a reconnect, lets tell the server our revisionnumber
@@ -546,6 +553,7 @@ var pad = {
 				'userId': userName,
 				'padId': 'test',
 				'padPassword': 'padPassword',
+        'permission': 2,
 			};
 
 			//set readonly attribute if existing.
@@ -576,6 +584,7 @@ var pad = {
 					if(!data.userId) return;
 					if(!data.padId) return;
 					if(!data.padPassword) return;
+          if(!data.permission) return;
 					//if(!data.encPassword) return;
 
 					sessionStorage.__secbookUsername = data.userName;
@@ -584,6 +593,7 @@ var pad = {
 						'userId': data.userId,
 						'padId': data.padId,
 						'padPassword': data.padPassword,
+            'permission': data.permission,
 					};
 
 					//set readonly attribute if existing.

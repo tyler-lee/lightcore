@@ -1025,6 +1025,23 @@ function handleClientReady(client, message)
     return;
   }
 
+  //TODO: check permission
+  if(!message.permission)
+  {
+    messageLogger.warn("Dropped message, CLIENT_READY Message has no permission!");
+    return;
+  }
+  require('./PermissionHelper').getUserPadPermission(message.token, message.padId, function(err, permission){
+    if(!err) console.log(permission);
+    if(err || permission != message.permission) {
+      messageLogger.warn("Dropped message, CLIENT_READY Message permission not match!");
+      //set padId to null or just return;
+      //message.padId = '';
+      return;
+    }
+  });
+
+
   var author;
   var authorName;
   var authorColorId;

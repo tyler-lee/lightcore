@@ -31,7 +31,7 @@ var randomString = require('./pad_utils').randomString;
 var hooks = require('./pluginfw/hooks');
 var etherpadCrypto=require('./crypto/EtherPadCrypto');
 
-var token, padId, export_links, userName;
+var token, padId, export_links, userName, permission;
 
 function init() {
   $(document).ready(function ()
@@ -73,8 +73,13 @@ function init() {
 			alert('padId not match');
 			padId = '';
 		}
+    if (userInfo.permission === undefined || userInfo.permission === null) {
+      alert('permission forbid');
+      padId = '';
+    }
 		token = userInfo.userId;
 		userName = userInfo.userName;
+    permission = userInfo.permission;
 
 		var masterKey = userInfo.padPassword;
 		changesetCrypto=new etherpadCrypto(userInfo.userId, masterKey);
@@ -188,7 +193,9 @@ function sendSocketMsg(type, data)
 			  "userName": userName,
               "sessionID": sessionID,
               "password": password,
-              "protocolVersion": 2};
+              "protocolVersion": 2,
+              "permission": permission
+            };
 
   socket.json.send(msg);
 }
