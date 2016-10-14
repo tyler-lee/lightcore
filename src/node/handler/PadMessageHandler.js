@@ -1087,24 +1087,24 @@ function handleClientReady(client, message)
         }
       });
     },
-	//check whether userName is set
-	function(callback)
-	{
-      authorManager.getAuthorName(author, function(err, _userName)
-      {
-        if(ERR(err, callback)) return;
-		if(!_userName) {
-			authorManager.setAuthorName(author, message.userName);
-		}
-		else {
-			if(_userName !== message.userName) {
-				console.log('tylerlee: getAuthorName userName not match', _userName, message.userName);
-				return;
-			}
-		}
-        callback();
-      });
-	},
+  // //check whether userName is set
+  // function(callback)
+  // {
+  //     authorManager.getAuthorName(author, function(err, _userName)
+  //     {
+  //       if(ERR(err, callback)) return;
+  //       if(!_userName) {
+  //         authorManager.setAuthorName(author, message.userName);
+  //       }
+  //       else {
+  //         if(_userName !== message.userName) {
+  //           console.log('tylerlee: getAuthorName userName not match', _userName, message.userName);
+  //           return;
+  //         }
+  //       }
+  //       callback();
+  //     });
+  // },
 	//check whether pad exists.
 	function(callback)
 	{
@@ -1305,6 +1305,7 @@ function handleClientReady(client, message)
           "initialChangesets": [] // FIXME: REMOVE THIS SHIT
         }
 
+        authorName = message.userName;
         //Add a username to the clientVars if one avaiable
         if(authorName != null)
         {
