@@ -15,7 +15,7 @@
  */
 
 var AES = require('./aes');
-var JSEncrypt = require('./JSEncrypt');
+var JSEncrypt = require('./jsencrypt.min');
 var HmacSHA256 = require('./hmac-sha256');
 
 //generate new key pair: set default_key_size as parameter
