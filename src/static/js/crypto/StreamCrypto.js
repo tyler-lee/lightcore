@@ -84,7 +84,7 @@ StreamCrypto = function(password) {
 	this.ivBitLength = 64;
 
 	//the max key stream length: key stream length exceed this will lead to reset
-	this.streamMaxLength = 1024;
+	this.streamMaxLength = (4 << 10);
 
 	this.nonce = null;
 	/*
@@ -105,13 +105,8 @@ StreamCrypto = function(password) {
 	this.cryptoStore = {};
 	this.storeCapacity = 5;
 	this.storeLoopup = [];
-	this.storeNextIndex = - 1;
+	this.storeNextIndex = -1;
 
-	//生成高8bits映射数组
-	this.mapArray = [];
-	this.initMappingArray();
-
-	this.nonce = null;
 	this.selectCryptor(generateRandomString(4));
 };
 
@@ -137,56 +132,6 @@ StreamCrypto.prototype.selectCryptor = function(nonce) {
 
 	this.nonce = nonce;
 	return this.cryptoStore[nonce];
-}
-
-StreamCrypto.prototype.initMappingArray = function() {
-	//0xD800~0xDFFF是非法区域
-	//可以被映射的合法字符区域，使用Streamkey的性质对这个区域的数字进行重新排列
-	//然后将中文可能出现的字符区间映射到这些字符区域，这也是相当于加密
-	var legalAera = [0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xa0, 0xb0, 0xc0];
-	var shuffleHash = parseInt(sha256JS.HmacSHA256('shuffle', this.key).toString().substring(0, 5), 16);
-
-	//初始化长度为16的数组，用于存储映射后的值
-	//必须显示初始化js数组，真是好麻烦
-	for (var a = 0; a < 16; a++)
-	this.mapArray.push( - 1);
-
-	//实际加密前最高4比特可能的数值，往右移动成为检索下标
-	var legalIndex = [0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0F];
-
-	var legalAeraLen = legalAera.length;
-	//将this.mapArray中对应着legalIndex的位置的数值根据Hmac值进行映射
-	//完成下标和值之间的11对应关系
-	for (var i in legalIndex) {
-		var randPos = shuffleHash % legalAeraLen;
-		this.mapArray[legalIndex[i]] = legalAera[randPos];
-
-		//删除已经使用的合法区域，并且减少长度
-		legalAera.splice(randPos, 1);
-		legalAeraLen = legalAeraLen - 1;
-	}
-}
-
-//top8bits as 0xa0..
-StreamCrypto.prototype.undoMaps = function(top8bits) {
-	//这里我们需要从mapA中得到对应的下标，然后左移4bits返回
-	//如果找不到，那就发生错误
-	for (var i in this.mapArray) {
-		if (this.mapArray[i] == top8bits) return (i << 4);
-	}
-
-	console.log("Fatal err in StreamCrypto.prototype.undoMaps. top8bits is " + top8bits);
-	return top8bits;
-}
-
-StreamCrypto.prototype.doMaps = function(top8bits) {
-	var a = top8bits >> 4;
-	if (this.mapArray[a] == - 1) {
-		console.log("doMaps-top8bits>>4 = " + a);
-		return top8bits;
-	}
-
-	return this.mapArray[a];
 }
 
 /*
@@ -227,23 +172,31 @@ var generateStreamUpToLength = function(cryptorObj, upToLength) {
  * isResetIV	加密前是否先更新IV：true更新，false继续使用当前IV
  */
 StreamCrypto.prototype.encrypt = function(plaintext, isResetIV) {
+	var cryptorObj = this.selectCryptor(this.nonce);
 	if (isResetIV) {
 		this.nonce = generateRandomString(4);
+		cryptorObj = this.selectCryptor(this.nonce);
+		//一次生成并缓存所有this.streamMaxLength密钥流
+		generateStreamUpToLength(cryptorObj, this.streamMaxLength);
 	}
 
-	var cryptorObj = this.selectCryptor(this.nonce);
 	//加密完当前明文后密钥流将达到的长度：明文长度为plaintext<<1，当前已经使用到的位置为this.cursor
 	var needToGenerateStreamSize = (plaintext.length << 1) + (cryptorObj.cursor);
 	//计算本次明文加密需要多少密钥流，一次性生成足够密钥流
 	generateStreamUpToLength(cryptorObj, needToGenerateStreamSize);
 
-	//记录此次加密所使用密钥流的起始位置
-	var baseoffset = cryptorObj.cursor;
-	var nonce = this.nonce;
+	//组织密文结构
+	/*
+	cipherObj = {
+		ciphertext: 'xxx',
+		nonce: 'xxxx',
+		offset: [a, b, c, ...]
+	}
+	*/
+	var returnObj = {ciphertext: '', nonce: this.nonce, offset:[]};
 
 	var plain = 0;
 	var cipher = 0;
-	var ciphertext = '';
 	var highByte = 0;
 	var lowByte = 0;
 	var finisedCount = 0;
@@ -253,25 +206,33 @@ StreamCrypto.prototype.encrypt = function(plaintext, isResetIV) {
 		cipher = plain;
 
 		if (plain != 10) { //10是回车符
-			//加密
-			highByte = (plain >> 8);
-			lowByte = (plain & 0x00FF);
+			//0xDF80到0xDFFF是非法区
+			do
+			{
+				highByte = (plain >> 8) ^ cryptorObj.stream[cryptorObj.cursor];
+				lowByte = ((plain & 0xFF) ^ cryptorObj.stream[cryptorObj.cursor + 1]);
+				cipher = (highByte << 8) | lowByte;
 
-			var top8bits = highByte & 0xf0;
-			highByte = (highByte ^ cryptorObj.stream[cryptorObj.cursor]) & 0x0f;
+				if (cipher >= 0xDF80 && cipher <= 0xDFFF) {
+					cryptorObj.cursor += 1;
+					needToGenerateStreamSize += 1;
 
-			top8bits = this.doMaps(top8bits);
-			highByte = highByte | top8bits;
-
-			lowByte = ((plain & 0x00FF) ^ cryptorObj.stream[cryptorObj.cursor + 1]);
-			cipher = (highByte << 8) | lowByte;
+					if (needToGenerateStreamSize >= this.streamMaxLength) {
+						generateStreamUpToLength(cryptorObj, needToGenerateStreamSize);
+					}
+				}
+				else {
+					returnObj.offset[finisedCount] = cryptorObj.cursor;
+					break;
+				}
+			} while (true);
 
 			if (cipher == 10) {
 				cipher = 0;
 			}
 			cryptorObj.cursor += 2;
 		}
-		ciphertext += String.fromCharCode(cipher);
+		returnObj.ciphertext += String.fromCharCode(cipher);
 		//处理完一个字符
 		finisedCount++;
 	}
@@ -282,12 +243,7 @@ StreamCrypto.prototype.encrypt = function(plaintext, isResetIV) {
 		this.nonce = generateRandomString(4);
 	}
 
-	//加密返回结果包括密文以及加密所使用密钥流的位置相关信息
-	return {
-		'ciphertext': ciphertext,
-		'nonce': nonce,
-		'offset': baseoffset
-	};
+	return returnObj;
 };
 
 /*
@@ -295,6 +251,8 @@ StreamCrypto.prototype.encrypt = function(plaintext, isResetIV) {
  * ciphertext	待解密的密文
  * nonce		解密密文所使用的nonce值
  * offset		密文所使用对应IV密钥流的偏移量
+ *
+ * 事实上，解密时是单个字符解密，因为每个字符就是一个CS
  */
 StreamCrypto.prototype.decrypt = function(ciphertext, nonce, offset) {
 	var cryptorObj = this.selectCryptor(nonce);
@@ -303,9 +261,6 @@ StreamCrypto.prototype.decrypt = function(ciphertext, nonce, offset) {
 	//解密时计算需要生成到的密钥流位置，即在offset基础上延伸ciphertext*2长度
 	var needToGenerateStreamSize = (offset + (ciphertext.length << 1));
 	generateStreamUpToLength(cryptorObj, needToGenerateStreamSize);
-
-	//移动cursor到给定offset处
-	cryptorObj.cursor = offset;
 
 	var cipher = 0;
 	var plain = 0;
@@ -317,6 +272,7 @@ StreamCrypto.prototype.decrypt = function(ciphertext, nonce, offset) {
 		//经过事先生成足够的密钥流，可以保证整个解密过程中密钥流足够使用，因此解密过程中不需要再去判断是否需要生成更多的密钥流
 		cipher = ciphertext.charCodeAt(finisedCount);
 		plain = cipher;
+		cryptorObj.cursor = offset[finisedCount];
 
 		if (cipher != 10) {
 			//一个字有两个字节，而密钥流是以字节8bit为单位进行处理的，因此需要分开取出处理
@@ -324,19 +280,10 @@ StreamCrypto.prototype.decrypt = function(ciphertext, nonce, offset) {
 				cipher = 0x000A;
 			}
 
-			highByte = (cipher >> 8);
-			lowByte = (cipher & 0x00FF);
-
-			var top8bits = highByte & 0xf0;
-			top8bits = this.undoMaps(top8bits);
-
-			highByte = (highByte ^ cryptorObj.stream[cryptorObj.cursor]) & 0x0f;
-			highByte = highByte | top8bits;
-			lowByte = lowByte ^ cryptorObj.stream[cryptorObj.cursor + 1];
+			highByte = (cipher >> 8) ^ cryptorObj.stream[cryptorObj.cursor];
+			lowByte = (cipher & 0xFF) ^ cryptorObj.stream[cryptorObj.cursor + 1];
 
 			plain = (highByte << 8) | lowByte;
-			cryptorObj.cursor += 2;
-
 		}
 		plaintext += String.fromCharCode(plain);
 		finisedCount++;
@@ -350,8 +297,8 @@ StreamCrypto.prototype.decrypt = function(ciphertext, nonce, offset) {
 //导出该封装后的密码模块
 module.exports = StreamCrypto;
 
-//test part
 /*
+//test part
 var masterkey = "hello123kitty";
 var keyBitLength = 128;
 

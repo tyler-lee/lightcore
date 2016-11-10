@@ -65,7 +65,7 @@ var AttributePool = require('../AttributePool');
  * will be updated to apool for the userChangeset.
  *
  * cipherInfo is in following format:
- *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': xx}
+ *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': [a, b, ...]}
  * offset is number.
  * some of the field may be missing.
  * TODO: Currently, authorId is no used.
@@ -111,11 +111,8 @@ var putCipherInfoAttribs = function (userChangeset, apool, cipherInfo) {
 				if(cs.charBank[charCount] != '\n') {
 					//append nonce attrib info
 					newOp.attribs += '*' + Number(nonceAttribNum).toString(36);
-					//put offset attribute into apool
-					var offsetAttribNum = apool.putAttrib(['offset', Number(offset).toString(36)]);
-					//var offsetAttribNum = putAttribToApool(apool, ['offset', Number(offset).toString(36)]);
-					//each char occupies two bytes
-					offset += 2;
+					//put offset[count] attribute into apool
+					var offsetAttribNum = apool.putAttrib(['offset', Number(offset[count]).toString(36)]);
 					newOp.attribs += '*' + Number(offsetAttribNum).toString(36);
 				}
 				else {
@@ -140,13 +137,14 @@ exports.putCipherInfoAttribs = putCipherInfoAttribs;
 
 /*
  * Function: get crypto info from apool according to the each operation's attribs.
+ * Note: only one char is processed at a time, so there is only one offset attribute.
  *
  * Return:
- *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': xx}
+ *		{'authorId': 'xxx', 'nonce': 'xxxx', 'offset': [a, b, ...]}
  * offset is number.
  */
 var getCipherInfoAttribs = function(apool, attribs) {
-	var result = {};
+	var result = {offset:[]};
 
 	var opAttribs= attribs.split('*');
 	for(var index in opAttribs) {
@@ -171,7 +169,7 @@ var getCipherInfoAttribs = function(apool, attribs) {
 			result.nonce = attrib[1];
 		}
 		else if(attrib[0] == 'offset') {
-			result.offset = parseInt(String(attrib[1]), 36);
+			result.offset[0] = parseInt(String(attrib[1]), 36);
 		}
 	}
 
