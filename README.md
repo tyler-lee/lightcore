@@ -1,4 +1,6 @@
 # A really-real time collaborative word processor for the web
+Our poster [['LightCore: Lightweight Collaborative Editing Cloud Services for Sensitive Data']](https://link.springer.com/chapter/10.1007/978-3-319-28166-7_11) has been accepted by ACNS 2015. Please kindly cite our poster if you like lightcore!
+
 ![alt text](http://i.imgur.com/zYrGkg3.gif "Etherpad in action on PrimaryPad")
 
 # About
